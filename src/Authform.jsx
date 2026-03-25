@@ -439,7 +439,7 @@ const EyeIcon = ({ open }) => open ? (
   </svg>
 );
 
-export default function AuthForm() {
+export default function AuthForm(onLoginSuccess) {
   const [tab, setTab] = useState("signin");
   const [prevTab, setPrevTab] = useState(null);
   const [showPass, setShowPass] = useState(false);
@@ -464,6 +464,7 @@ export default function AuthForm() {
     if (tab === "signin") {
       if (!signinFields.email.includes("@")) e.email = "Enter a valid email";
       if (signinFields.password.length < 6) e.password = "Password too short";
+      onLoginSuccess();
     } else {
       if (!signupFields.firstName.trim()) e.firstName = "Required";
       if (!signupFields.lastName.trim()) e.lastName = "Required";

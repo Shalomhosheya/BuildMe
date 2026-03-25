@@ -11,14 +11,16 @@ import AuthForm from './Authform';
 
 const FULL_HEIGHT: Screen[] = ['ai-tutor', 'notes'];
 
-export default function App() {
-  // Start with authform
-  const [screen, setScreen] = useState<Screen>('authform');
-  const isFullHeight = FULL_HEIGHT.includes(screen);
 
+export default function App() {
+  const [screen, setScreen] = useState<Screen>('authform'); // Start with AuthForm
+  const isFullHeight = FULL_HEIGHT.includes(screen);
+  
   const renderScreen = () => {
     switch (screen) {
-      case 'authform': return <AuthForm />;
+      case 'authform':
+        // Pass setScreen so AuthForm can navigate after login
+        return <AuthForm onLoginSuccess={() => setScreen('dashboard')} /> ;
       case 'dashboard': return <Dashboard onNav={setScreen} />;
       case 'quiz':      return <Quiz />;
       case 'ai-tutor':  return <AiTutor />;
