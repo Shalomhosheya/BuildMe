@@ -9,6 +9,7 @@ interface SidebarProps {
 
 const NAV = [
   { screen: 'dashboard' as Screen, label: 'Dashboard', icon: LayoutDashboard, section: null },
+  { screen: 'auth' as Screen, label: 'auth', icon: LayoutDashboard, section: null },
   { screen: null, label: 'Learn', icon: null, section: true },
   { screen: 'ai-tutor' as Screen, label: 'Writing', icon: PenLine, section: null },
   { screen: 'ai-tutor' as Screen, label: 'Reading', icon: BookOpen, section: null },
@@ -91,6 +92,7 @@ export default function Sidebar({ active, onNav }: SidebarProps) {
 
 function getActiveLabel(screen: Screen): string {
   const map: Record<Screen, string> = {
+    authform: 'Auth',
     dashboard: 'Dashboard', quiz: 'Quiz', 'ai-tutor': 'AI tutor', notes: 'Notes', portfolio: 'My portfolio',
   };
   return map[screen];

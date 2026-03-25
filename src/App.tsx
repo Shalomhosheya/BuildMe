@@ -7,15 +7,18 @@ import Quiz from './Quiz';
 import AiTutor from './AiTutor';
 import Notes from './Notes';
 import Portfolio from './Portfolio';
+import AuthForm from './Authform';
 
 const FULL_HEIGHT: Screen[] = ['ai-tutor', 'notes'];
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>('dashboard');
+  // Start with authform
+  const [screen, setScreen] = useState<Screen>('authform');
   const isFullHeight = FULL_HEIGHT.includes(screen);
 
   const renderScreen = () => {
     switch (screen) {
+      case 'authform': return <AuthForm />;
       case 'dashboard': return <Dashboard onNav={setScreen} />;
       case 'quiz':      return <Quiz />;
       case 'ai-tutor':  return <AiTutor />;
