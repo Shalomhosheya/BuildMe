@@ -1,26 +1,39 @@
 import React, { useState } from 'react';
 import './index.css';
 import { Screen } from './types';
+import { isLoggedIn, clearSession } from './api/auth';
+import Login from './login';
 import Sidebar from './Sidebar';
 import Dashboard from './Dashboard';
 import Quiz from './Quiz';
 import AiTutor from './AiTutor';
 import Notes from './Notes';
 import Portfolio from './Portfolio';
-import AuthForm from './Authform';
 
 const FULL_HEIGHT: Screen[] = ['ai-tutor', 'notes'];
 
-
 export default function App() {
-  const [screen, setScreen] = useState<Screen>('authform'); // Start with AuthForm
+  const [authed, setAuthed]   = useState<boolean>(isLoggedIn());
+  const [screen, setScreen]   = useState<Screen>('dashboard');
+
+  function handleLogin() {
+    setAuthed(true);
+    setScreen('dashboard');
+  }
+
+  function handleLogout() {
+    clearSession();
+    setAuthed(false);
+  }
+
+  if (!authed) {
+    return <Login onLogin={handleLogin} />;
+  }
+
   const isFullHeight = FULL_HEIGHT.includes(screen);
-  
+
   const renderScreen = () => {
     switch (screen) {
-      case 'authform':
-        // Pass setScreen so AuthForm can navigate after login
-        return <AuthForm onLoginSuccess={() => setScreen('dashboard')} /> ;
       case 'dashboard': return <Dashboard onNav={setScreen} />;
       case 'quiz':      return <Quiz />;
       case 'ai-tutor':  return <AiTutor />;
@@ -32,8 +45,13 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
-      <Sidebar active={screen} onNav={setScreen} />
-      <main style={{ flex: 1, overflowY: isFullHeight ? 'hidden' : 'auto', display: 'flex', flexDirection: 'column' }}>
+      <Sidebar active={screen} onNav={setScreen} onLogout={handleLogout} />
+      <main style={{
+        flex: 1,
+        overflowY: isFullHeight ? 'hidden' : 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+      }}>
         {renderScreen()}
       </main>
     </div>
