@@ -1,43 +1,24 @@
-const BASE_URL = "http://localhost:8080/api/notes";
+import { api } from './client';
 
-export async function fetchNotes() {
-  const res = await fetch(BASE_URL, {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
-    },
-  });
-  return res.json();
+export interface Note {
+  id: string;
+  title: string;
+  content: string;
+  tag: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export async function createNote(note: any) {
-  const res = await fetch(BASE_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
-    },
-    body: JSON.stringify(note),
-  });
-  return res.json();
-}
+export const notesApi = {
+  getAll: (tag?: string) =>
+    api.get<Note[]>(`/api/notes${tag && tag !== 'all' ? `?tag=${tag}` : ''}`),
 
-export async function updateNote(id: string, note: any) {
-  const res = await fetch(`${BASE_URL}/${id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
-    },
-    body: JSON.stringify(note),
-  });
-  return res.json();
-}
+  create: (title: string, content: string, tag: string) =>
+    api.post<Note>('/api/notes', { title, content, tag }),
 
-export async function deleteNote(id: string) {
-  await fetch(`${BASE_URL}/${id}`, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
-    },
-  });
-}
+  update: (id: string, title: string, content: string, tag: string) =>
+    api.put<Note>(`/api/notes/${id}`, { title, content, tag }),
+
+  delete: (id: string) =>
+    api.delete<{ message: string }>(`/api/notes/${id}`),
+};

@@ -1,48 +1,20 @@
-export type Screen = 'authform'|'dashboard' | 'quiz' | 'ai-tutor' | 'notes' | 'portfolio';
+export type Screen = 'dashboard' | 'quiz' | 'ai-tutor' | 'notes' | 'portfolio' | 'speaking';
 
 export interface Skill {
-  id: string;
-  name: string;
-  level: number;
-  levelName: string;
-  pts: number;
-  maxPts: number;
-  color: string;
-  bg: string;
+  id: string; name: string; level: number; levelName: string;
+  pts: number; maxPts: number; color: string; bg: string;
 }
-
 export interface Note {
-  id: number;
-  title: string;
-  content: string;
-  tag: string;
-  date: string;
+  id: number; title: string; content: string; tag: string; date: string;
 }
-
 export interface Badge {
-  id: string;
-  name: string;
-  desc: string;
-  earned: boolean;
-  color: string;
-  bg: string;
+  id: string; name: string; desc: string; earned: boolean; color: string; bg: string;
 }
-
 export interface QuizQuestion {
-  q: string;
-  opts: string[];
-  ans: number;
-  exp: string;
+  q: string; opts: string[]; ans: number; exp: string;
 }
-
 export interface QuizSet {
-  id: string;
-  skill: string;
-  title: string;
-  desc: string;
-  level: number;
-  levelName: string;
-  pts: number;
-  done: boolean;
+  id: string; skill: string; title: string; desc: string;
+  level: number; levelName: string; pts: number; done: boolean;
   questions: QuizQuestion[];
 }

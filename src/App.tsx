@@ -9,26 +9,18 @@ import Quiz from './Quiz';
 import AiTutor from './AiTutor';
 import Notes from './Notes';
 import Portfolio from './Portfolio';
+import Speaking from './Speaking';
 
 const FULL_HEIGHT: Screen[] = ['ai-tutor', 'notes'];
 
 export default function App() {
-  const [authed, setAuthed]   = useState<boolean>(isLoggedIn());
-  const [screen, setScreen]   = useState<Screen>('dashboard');
+  const [authed, setAuthed] = useState<boolean>(isLoggedIn());
+  const [screen, setScreen] = useState<Screen>('dashboard');
 
-  function handleLogin() {
-    setAuthed(true);
-    setScreen('dashboard');
-  }
+  function handleLogin()  { setAuthed(true); setScreen('dashboard'); }
+  function handleLogout() { clearSession(); setAuthed(false); }
 
-  function handleLogout() {
-    clearSession();
-    setAuthed(false);
-  }
-
-  if (!authed) {
-    return <Login onLogin={handleLogin} />;
-  }
+  if (!authed) return <Login onLogin={handleLogin} />;
 
   const isFullHeight = FULL_HEIGHT.includes(screen);
 
@@ -38,7 +30,8 @@ export default function App() {
       case 'quiz':      return <Quiz />;
       case 'ai-tutor':  return <AiTutor />;
       case 'notes':     return <Notes />;
-      case 'portfolio': return <Portfolio />;
+      case 'speaking':  return <Speaking />;
+      case 'portfolio': return <Portfolio onLogout={handleLogout} />;
       default:          return <Dashboard onNav={setScreen} />;
     }
   };
@@ -46,12 +39,7 @@ export default function App() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
       <Sidebar active={screen} onNav={setScreen} onLogout={handleLogout} />
-      <main style={{
-        flex: 1,
-        overflowY: isFullHeight ? 'hidden' : 'auto',
-        display: 'flex',
-        flexDirection: 'column',
-      }}>
+      <main style={{ flex: 1, overflowY: isFullHeight ? 'hidden' : 'auto', display: 'flex', flexDirection: 'column' }}>
         {renderScreen()}
       </main>
     </div>

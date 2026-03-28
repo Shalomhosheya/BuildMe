@@ -1,6 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Screen } from './types';
-import { LayoutDashboard, PenLine, BookOpen, Headphones, Mic, Timer, MessageSquare, FileText, Award } from 'lucide-react';
+import { 
+  LayoutDashboard, PenLine, BookOpen, Headphones, Mic, 
+  Timer, MessageSquare, FileText, Award, LogOut 
+} from 'lucide-react';
+import { authApi } from './api/auth';
 
 interface SidebarProps {
   active: Screen;
@@ -9,21 +13,57 @@ interface SidebarProps {
 }
 
 const NAV = [
-  { screen: 'dashboard' as Screen, label: 'Dashboard', icon: LayoutDashboard, section: null },
-  { screen: null, label: 'Learn', icon: null, section: true },
-  { screen: 'ai-tutor' as Screen, label: 'Writing', icon: PenLine, section: null },
-  { screen: 'ai-tutor' as Screen, label: 'Reading', icon: BookOpen, section: null },
-  { screen: 'ai-tutor' as Screen, label: 'Listening', icon: Headphones, section: null },
-  { screen: 'ai-tutor' as Screen, label: 'Speaking', icon: Mic, section: null },
-  { screen: null, label: 'Practice', icon: null, section: true },
-  { screen: 'quiz' as Screen, label: 'Quiz', icon: Timer, section: null },
-  { screen: 'ai-tutor' as Screen, label: 'AI tutor', icon: MessageSquare, section: null },
-  { screen: 'notes' as Screen, label: 'Notes', icon: FileText, section: null },
-  { screen: null, label: 'Portfolio', icon: null, section: true },
-  { screen: 'portfolio' as Screen, label: 'My portfolio', icon: Award, section: null },
+  { screen: 'dashboard' as Screen, label: 'Dashboard',    icon: LayoutDashboard, section: null },
+  { screen: null,                   label: 'Learn',        icon: null,            section: true },
+  { screen: 'ai-tutor' as Screen,  label: 'Writing',      icon: PenLine,         section: null },
+  { screen: 'ai-tutor' as Screen,  label: 'Reading',      icon: BookOpen,        section: null },
+  { screen: 'ai-tutor' as Screen,  label: 'Listening',    icon: Headphones,      section: null },
+  { screen: 'speaking' as Screen,  label: 'Speaking train',     icon: Mic,             section: null },
+  { screen: null,                   label: 'Practice',     icon: null,            section: true },
+  { screen: 'quiz' as Screen,      label: 'Quiz',         icon: Timer,           section: null },
+  { screen: 'ai-tutor' as Screen,  label: 'AI tutor',     icon: MessageSquare,   section: null },
+  { screen: 'notes' as Screen,     label: 'Notes',        icon: FileText,        section: null },
+  { screen: null,                   label: 'Portfolio',    icon: null,            section: true },
+  { screen: 'portfolio' as Screen, label: 'My portfolio', icon: Award,           section: null },
 ];
 
-export default function Sidebar({ active, onNav }: SidebarProps) {
+function getActiveLabel(screen: Screen): string {
+  // Use Partial so missing keys like authform won't break TS
+  const map: Partial<Record<Screen, string>> = {
+    dashboard: 'Dashboard',
+    quiz: 'Quiz',
+    'ai-tutor': 'AI tutor',
+    speaking:"speaking",
+    notes: 'Notes',
+    portfolio: 'My portfolio',
+  };
+  return map[screen] ?? '';
+}
+
+export default function Sidebar({ active, onNav, onLogout }: SidebarProps) {
+  const [userName,  setUserName]  = useState('');
+  const [userLevel, setUserLevel] = useState('');
+  const [initials,  setInitials]  = useState('??');
+
+  useEffect(() => {
+    authApi.me()
+      .then(u => {
+        setUserName(u.name ?? '');
+        setInitials(
+          (u.name ?? '??').split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
+        );
+        const top = Math.max(
+          u.writing?.level  ?? 1, u.reading?.level   ?? 1,
+          u.listening?.level ?? 1, u.speaking?.level  ?? 1
+        );
+        const names: Record<number, string> = {
+          1: 'Prestructural', 2: 'Unistructural', 3: 'Multistructural',
+        };
+        setUserLevel(`${names[top] ?? 'Prestructural'} · Level ${top}`);
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <aside style={{
       width: 'var(--sidebar-width)', flexShrink: 0,
@@ -31,6 +71,7 @@ export default function Sidebar({ active, onNav }: SidebarProps) {
       display: 'flex', flexDirection: 'column', height: '100vh',
       position: 'sticky', top: 0, overflowY: 'auto',
     }}>
+      {/* Logo */}
       <div style={{ padding: '28px 20px 24px', borderBottom: '1px solid var(--border)' }}>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--purple)', letterSpacing: '-0.5px' }}>
           Build Me
@@ -40,6 +81,7 @@ export default function Sidebar({ active, onNav }: SidebarProps) {
         </div>
       </div>
 
+      {/* Navigation */}
       <nav style={{ flex: 1, padding: '8px 0' }}>
         {NAV.map((item, i) => {
           if (item.section) {
@@ -61,7 +103,8 @@ export default function Sidebar({ active, onNav }: SidebarProps) {
                 width: '100%', padding: '9px 20px', fontSize: 13,
                 background: isActive ? 'var(--purple-light)' : 'transparent',
                 color: isActive ? 'var(--purple-dark)' : 'var(--text-secondary)',
-                border: 'none', borderLeft: isActive ? '2px solid var(--purple)' : '2px solid transparent',
+                border: 'none',
+                borderLeft: isActive ? '2px solid var(--purple)' : '2px solid transparent',
                 fontWeight: isActive ? 500 : 400, textAlign: 'left',
                 transition: 'all 0.15s', cursor: 'pointer',
               }}
@@ -75,25 +118,50 @@ export default function Sidebar({ active, onNav }: SidebarProps) {
         })}
       </nav>
 
-      <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{
-          width: 34, height: 34, borderRadius: '50%',
-          background: 'var(--purple-light)', display: 'flex', alignItems: 'center',
-          justifyContent: 'center', fontSize: 12, fontWeight: 600, color: 'var(--purple-dark)',
-        }}>AM</div>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 500 }}>Ahmad M.</div>
-          <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>Multistructural · Level 3</div>
+      {/* User info + logout */}
+      <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+          <div style={{
+            width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+            background: 'var(--purple-light)', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', fontSize: 12, fontWeight: 600, color: 'var(--purple-dark)',
+          }}>
+            {initials}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text-primary)' }}>
+              {userName || '—'}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-tertiary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {userLevel || 'Loading...'}
+            </div>
+          </div>
         </div>
+
+        <button
+          onClick={onLogout}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', gap: 7, padding: '8px',
+            fontSize: 12, fontWeight: 500, cursor: 'pointer',
+            border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+            background: 'transparent', color: 'var(--text-secondary)',
+            transition: 'all 0.15s',
+          }}
+          onMouseEnter={e => {
+            (e.currentTarget.style.background   = '#FCEBEB');
+            (e.currentTarget.style.color        = '#791F1F');
+            (e.currentTarget.style.borderColor  = '#E24B4A');
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget.style.background   = 'transparent');
+            (e.currentTarget.style.color        = 'var(--text-secondary)');
+            (e.currentTarget.style.borderColor  = 'var(--border)');
+          }}
+        >
+          <LogOut size={13} /> Sign out
+        </button>
       </div>
     </aside>
   );
-}
-
-function getActiveLabel(screen: Screen): string {
-  const map: Record<Screen, string> = {
-    authform: 'Auth',
-    dashboard: 'Dashboard', quiz: 'Quiz', 'ai-tutor': 'AI tutor', notes: 'Notes', portfolio: 'My portfolio',
-  };
-  return map[screen];
 }

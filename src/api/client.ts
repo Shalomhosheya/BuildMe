@@ -1,6 +1,6 @@
 const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 
-function getToken(): string | null {
+export function getToken(): string | null {
   return localStorage.getItem('buildme_token');
 }
 
