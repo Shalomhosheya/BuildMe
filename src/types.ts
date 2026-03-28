@@ -15,6 +15,6 @@ export interface QuizQuestion {
 }
 export interface QuizSet {
   id: string; skill: string; title: string; desc: string;
-  level: number; levelName: string; pts: number; done: boolean;
+  level: number; levelName: string; pts: number; done: boolean;passage?: string;
   questions: QuizQuestion[];
 }
