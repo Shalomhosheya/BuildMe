@@ -16,7 +16,7 @@ export type Accent = 'british' | 'australian' | 'american';
 // These are stable public voice IDs from ElevenLabs
 const ELEVENLABS_VOICES: Record<Accent, { id: string; name: string }> = {
   british:    { id: 'N2lVS1w4EtoT3dr4eOWO', name: 'Callum'  }, // British male
-  australian: { id: 'XB0fDUnXU5powFXDhCwa', name: 'Charlotte' }, // closest to AUS
+  australian: { id: 'gAMZphRyrWJnLMDnom6H', name: 'Charlotte' }, // closest to AUS
   american:   { id: 'pNInz6obpgDQGcFmaJgB', name: 'Adam'    }, // American male
 };
 
@@ -141,7 +141,8 @@ export async function speakText(
   accent: Accent,
   onEnd: () => void,
 ): Promise<() => void> {
-    const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY as string | undefined;
+    // const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY as string | undefined;
+    const apiKey = 'sk_51f46b2c97e73e5b79cf11abe012f45beb86777b026ce3f2';
   if (apiKey) {
     try {
       return await elevenLabsSpeak(text, accent, apiKey, onEnd);
