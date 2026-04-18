@@ -1,109 +1,194 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronRight, CheckCircle, XCircle, Volume2, RotateCcw, BookOpen } from 'lucide-react';
+import { ChevronRight, CheckCircle, XCircle, Volume2, RotateCcw, BookOpen, Play, Pause } from 'lucide-react';
 import { listeningApi, LOCAL_TRACKS, ACCENT_META, Accent, ListeningTrack, ListeningAttempt } from './api/listening';
+import WaveSurfer from 'wavesurfer.js';
+import { speakText } from './tts';
 
 type Stage = 'pick' | 'listening' | 'quiz' | 'result';
 
 const ACCENTS: Accent[] = ['british', 'australian', 'american'];
 
+// ─── WavePlayer (inline so no extra import needed) ───────────────────────────
+function WavePlayer({ audioUrl, accentColor }: { audioUrl: string; accentColor: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const wsRef        = useRef<WaveSurfer | null>(null);
+  const [playing,  setPlaying]  = useState(false);
+  const [current,  setCurrent]  = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [ready,    setReady]    = useState(false);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ws = WaveSurfer.create({
+      container:     containerRef.current,
+      waveColor:     'rgba(255,255,255,0.35)',
+      progressColor: '#ffffff',
+      height:        64,
+      barWidth:      2,
+      barGap:        1,
+      barRadius:     2,
+      cursorColor:   '#ffffff',
+      cursorWidth:   2,
+      normalize:     true,
+    });
+    ws.load(audioUrl);
+    ws.on('ready',        () => { setDuration(ws.getDuration()); setReady(true); });
+    ws.on('audioprocess', () => setCurrent(ws.getCurrentTime()));
+    ws.on('interaction',  () => setCurrent(ws.getCurrentTime()));
+    ws.on('finish',       () => setPlaying(false));
+    wsRef.current = ws;
+    return () => ws.destroy();
+  }, [audioUrl]);
+
+  const toggle = () => {
+    if (!wsRef.current || !ready) return;
+    wsRef.current.playPause();
+    setPlaying(wsRef.current.isPlaying());
+  };
+
+  const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
+  return (
+    
+    <div style={{
+      background: accentColor,
+      borderRadius: 16,
+      padding: '20px 24px',
+      boxShadow: `0 8px 32px ${accentColor}55`,
+    }}>
+      {/* waveform */}
+      <div ref={containerRef} style={{ marginBottom: 14, opacity: ready ? 1 : 0.4, transition: 'opacity 0.3s' }} />
+
+      {/* controls row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <button
+          onClick={toggle}
+          disabled={!ready}
+          style={{
+            width: 44, height: 44, borderRadius: '50%',
+            background: 'rgba(255,255,255,0.22)',
+            border: '2px solid rgba(255,255,255,0.55)',
+            color: '#fff', cursor: ready ? 'pointer' : 'default',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'transform 0.12s, background 0.12s',
+            flexShrink: 0,
+          }}
+          onMouseEnter={e => ready && ((e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.35)')}
+          onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.22)')}
+        >
+          {playing ? <Pause size={18} fill="#fff" /> : <Play size={18} fill="#fff" />}
+        </button>
+
+        {/* time */}
+        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', fontVariantNumeric: 'tabular-nums', minWidth: 80 }}>
+          {fmt(current)} / {fmt(duration)}
+        </span>
+
+        {/* thin progress bar (fallback visual when waveform is loading) */}
+        {!ready && (
+          <div style={{ flex: 1, height: 4, background: 'rgba(255,255,255,0.2)', borderRadius: 2 }}>
+            <div style={{ width: '30%', height: '100%', background: 'rgba(255,255,255,0.5)', borderRadius: 2, animation: 'pulse 1.4s ease infinite' }} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Animated bars (TTS fallback) ────────────────────────────────────────────
+function AnimatedBars({ color, tick }: { color: string; tick: number }) {
+  return (
+    <div style={{ display: 'flex', gap: 3, justifyContent: 'center', alignItems: 'center', height: 48 }}>
+      {Array.from({ length: 28 }).map((_, i) => (
+        <div key={i} style={{
+          width: 3, borderRadius: 2, background: color, opacity: 0.75,
+          height: `${10 + Math.abs(Math.sin(i * 0.6 + tick * 0.9)) * 28}px`,
+          transition: 'height 0.25s ease',
+        }} />
+      ))}
+    </div>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 export default function ListeningTrainer() {
   const [accent, setAccent]         = useState<Accent | null>(null);
   const [tracks, setTracks]         = useState<ListeningTrack[]>(LOCAL_TRACKS);
-  const [track, setTrack]           = useState<ListeningTrack | null>(null);
-  const [stage, setStage]           = useState<Stage>('pick');
-  const [answers, setAnswers]       = useState<Record<number, number>>({});
+  const [track,  setTrack]          = useState<ListeningTrack | null>(null);
+  const [stage,  setStage]          = useState<Stage>('pick');
+  const [answers,  setAnswers]      = useState<Record<number, number>>({});
   const [answered, setAnswered]     = useState<Record<number, boolean>>({});
-  const [score, setScore]           = useState(0);
+  const [score,    setScore]        = useState(0);
   const [submitting, setSubmitting] = useState(false);
-  const [serverPts, setServerPts]   = useState<number | null>(null);
-  const [history, setHistory]       = useState<ListeningAttempt[]>([]);
+  const [serverPts,  setServerPts]  = useState<number | null>(null);
+  const [history,    setHistory]    = useState<ListeningAttempt[]>([]);
   const [showTranscript, setShowTranscript] = useState(false);
-  const [playing, setPlaying]       = useState(false);
+  const [playing,  setPlaying]      = useState(false);
   const [playTime, setPlayTime]     = useState(0);
   const [filterLevel, setFilterLevel] = useState<string>('all');
 
-  const synth = useRef<SpeechSynthesisUtterance | null>(null);
-  const timer = useRef<NodeJS.Timeout | null>(null);
+  const timer   = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stopTTS = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    window.speechSynthesis.getVoices();
-
     listeningApi.history().then(setHistory).catch(() => {});
     return () => stopAudio();
   }, []);
 
   // ── helpers ──────────────────────────────────────────────────────────────
-  function qs(t: ListeningTrack) {
-    // Always returns a safe array even if questions is missing
-    return Array.isArray(t?.questions) ? t.questions : [];
-  }
+  const qs = (t: ListeningTrack) => Array.isArray(t?.questions) ? t.questions : [];
 
-  function getTotal(h: ListeningAttempt): number {
-    return (h as any).total ?? (h as any).totalQuestions ?? (h as any).questionCount ?? (h as any).questions ?? 1;
-  }
+  const getTotal = (h: ListeningAttempt): number =>
+    (h as any).total ?? (h as any).totalQuestions ?? (h as any).questionCount ?? 1;
 
   // ── Accent selection ─────────────────────────────────────────────────────
   function selectAccent(a: Accent) {
     setAccent(a);
     setTracks(LOCAL_TRACKS.filter(t => t.accent === a));
-    listeningApi.getTracks(a).then(setTracks).catch(() => {});
+
+    // Fetch from backend, then MERGE with local data so transcript/questions are never lost
+    listeningApi.getTracks(a).then(remote => {
+      const localMap = Object.fromEntries(LOCAL_TRACKS.map(t => [t.id, t]));
+      const merged = remote.map(r => ({
+        ...localMap[r.id],   // local base (has transcript + questions)
+        ...r,                // backend fields override (title, level, audioUrl …)
+        // but always keep local transcript & questions if backend omits them
+        transcript: r.transcript || localMap[r.id]?.transcript || '',
+        questions:  (r.questions?.length ? r.questions : localMap[r.id]?.questions) ?? [],
+      }));
+      setTracks(merged);
+    }).catch(() => {});
   }
 
   // ── TTS playback ─────────────────────────────────────────────────────────
-  function playTrack(t: ListeningTrack) {
-  stopAudio();
-  setPlaying(true);
-  setPlayTime(0);
+  async function playTTS(t: ListeningTrack) {
+    stopAudio();
+    console.log(import.meta.env.VITE_ELEVENLABS_API_KEY)
+    console.log('Transcript:', t.transcript?.slice(0, 50));
+    console.log('Accent:', t.accent);
+    const text = t.transcript?.trim();
+    if (!text) return;
 
-  const utt  = new SpeechSynthesisUtterance(t.transcript ?? '');
-  utt.rate   = 0.88;
-  utt.pitch  = 1.0;
-  utt.volume = 1.0;
-
-  utt.onend   = () => { setPlaying(false); clearInterval(timer.current!); };
-  utt.onerror = (e) => { console.error('TTS error', e); setPlaying(false); clearInterval(timer.current!); };
-
-  const voiceMap: Record<Accent, string[]> = {
-    british:    ['Daniel', 'Kate', 'Serena', 'en-GB'],
-    australian: ['Karen', 'Lee', 'en-AU'],
-    american:   ['Alex', 'Samantha', 'Zoe', 'en-US'],
-  };
-
-  function assignVoiceAndSpeak() {
-    const voices   = window.speechSynthesis.getVoices();
-    const preferred = voiceMap[t.accent];
-    const found    = voices.find(v =>
-      preferred.some(p => v.name.includes(p) || v.lang.includes(p))
-    );
-    if (found) utt.voice = found;
-
-    synth.current = utt;
-    window.speechSynthesis.speak(utt);
+    setPlaying(true);
+    setPlayTime(0);
     timer.current = setInterval(() => setPlayTime(s => s + 1), 1000);
-  }
 
-  const voices = window.speechSynthesis.getVoices();
-  if (voices.length > 0) {
-    // Voices already loaded — speak immediately
-    assignVoiceAndSpeak();
-  } else {
-    // Wait for voices to load, then speak
-    window.speechSynthesis.onvoiceschanged = () => {
-      window.speechSynthesis.onvoiceschanged = null;
-      assignVoiceAndSpeak();
-    };
+    const cancel = await speakText(text, t.accent, () => {
+      setPlaying(false);
+      if (timer.current) clearInterval(timer.current);
+    });
+
+    stopTTS.current = cancel;
   }
-}
 
   function stopAudio() {
+    if (stopTTS.current) { stopTTS.current(); stopTTS.current = null; }
     window.speechSynthesis.cancel();
     setPlaying(false);
     if (timer.current) clearInterval(timer.current);
   }
 
-  function fmt(s: number) {
-    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-  }
+  const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
   // ── Start track ──────────────────────────────────────────────────────────
   function startTrack(t: ListeningTrack) {
@@ -115,7 +200,8 @@ export default function ListeningTrainer() {
     setShowTranscript(false);
     setStage('listening');
     setPlayTime(0);
-    playTrack(t);
+    // Only use TTS when there is no real audioUrl
+    if (!t.audioUrl) playTTS(t);
   }
 
   function goToQuiz() {
@@ -156,10 +242,8 @@ export default function ListeningTrainer() {
   }
 
   // ── Derived ──────────────────────────────────────────────────────────────
-  const filteredTracks = tracks.filter(t =>
-    filterLevel === 'all' || String(t.level) === filterLevel
-  );
-  const completedIds = new Set(history.map(h => h.trackId));
+  const filteredTracks = tracks.filter(t => filterLevel === 'all' || String(t.level) === filterLevel);
+  const completedIds   = new Set(history.map(h => h.trackId));
 
   // ════════════════════════════════════════════════════════════════════════
   // RESULT SCREEN
@@ -174,6 +258,7 @@ export default function ListeningTrainer() {
 
     return (
       <div style={{ padding: '32px 36px', maxWidth: 740 }} className="animate-fadeUp">
+        
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 400 }}>Results</h1>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -197,7 +282,6 @@ export default function ListeningTrainer() {
           </div>
         </div>
 
-        {/* Per-question review */}
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 20, marginBottom: 16 }}>
           <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 14 }}>Question review</div>
           {questions.map((q, i) => {
@@ -208,7 +292,7 @@ export default function ListeningTrainer() {
                 <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
                   {correct
                     ? <CheckCircle size={16} color="#1D9E75" style={{ flexShrink: 0, marginTop: 2 }} />
-                    : <XCircle size={16} color="#E24B4A" style={{ flexShrink: 0, marginTop: 2 }} />}
+                    : <XCircle    size={16} color="#E24B4A" style={{ flexShrink: 0, marginTop: 2 }} />}
                   <span style={{ fontSize: 13, fontWeight: 500 }}>{q.q}</span>
                 </div>
                 {!correct && (
@@ -252,7 +336,10 @@ export default function ListeningTrainer() {
               {ACCENT_META[track.accent].flag} {ACCENT_META[track.accent].label} — {track.levelName}
             </p>
           </div>
-          <button onClick={() => { setStage('listening'); playTrack(track); }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'transparent', fontSize: 12, cursor: 'pointer' }}>
+          <button
+            onClick={() => { setStage('listening'); if (!track.audioUrl) playTTS(track); }}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'transparent', fontSize: 12, cursor: 'pointer' }}
+          >
             <Volume2 size={13} /> Listen again
           </button>
         </div>
@@ -305,7 +392,9 @@ export default function ListeningTrainer() {
   // LISTENING SCREEN
   // ════════════════════════════════════════════════════════════════════════
   if (stage === 'listening' && track) {
-    const meta = ACCENT_META[track.accent];
+    const meta     = ACCENT_META[track.accent];
+    const hasAudio = Boolean(track.audioUrl);
+
     return (
       <div style={{ padding: '32px 36px', maxWidth: 680 }} className="animate-fadeUp">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
@@ -316,47 +405,71 @@ export default function ListeningTrainer() {
           <button onClick={reset} style={{ padding: '7px 14px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'transparent', fontSize: 12, cursor: 'pointer' }}>Exit</button>
         </div>
 
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)', padding: 32, textAlign: 'center', marginBottom: 16 }}>
-          <div style={{ width: 80, height: 80, borderRadius: '50%', background: meta.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 36 }}>
-            {meta.flag}
+        <div style={{ background: meta.color, borderRadius: 'var(--radius-xl)', padding: 28, marginBottom: 16, boxShadow: `0 8px 32px ${meta.color}44` }}>
+          {/* header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, flexShrink: 0 }}>
+              {meta.flag}
+            </div>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>{meta.label}</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>{track.topic} · {track.duration}</div>
+            </div>
           </div>
 
-          {playing ? (
+          {/* ── Real audio: WaveSurfer ── */}
+          {hasAudio ? (
             <>
-              <div style={{ fontSize: 14, fontWeight: 500, color: meta.color, marginBottom: 4 }}>Now playing — {meta.label}</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 32, color: meta.color, marginBottom: 8 }}>{fmt(playTime)}</div>
-              <div style={{ display: 'flex', gap: 4, justifyContent: 'center', alignItems: 'center', height: 40, marginBottom: 20 }}>
-                {Array.from({ length: 24 }).map((_, i) => (
-                  <div key={i} style={{ width: 3, borderRadius: 2, background: meta.color, opacity: 0.7, height: `${8 + Math.sin(i * 0.8 + playTime) * 14 + 14}px`, transition: 'height 0.3s ease' }} />
-                ))}
-              </div>
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-                <button onClick={stopAudio} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 20px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'transparent', fontSize: 13, cursor: 'pointer' }}>
-                  Stop
-                </button>
-                <button onClick={goToQuiz} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 20px', background: 'var(--purple)', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
-                  Go to questions <ChevronRight size={13} />
-                </button>
-              </div>
+              <WavePlayer audioUrl={track.audioUrl!} accentColor={meta.color} />
+              <button
+                onClick={goToQuiz}
+                style={{ marginTop: 16, width: '100%', padding: '11px', background: 'rgba(255,255,255,0.2)', color: '#fff', border: '2px solid rgba(255,255,255,0.5)', borderRadius: 'var(--radius-md)', fontSize: 14, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, backdropFilter: 'blur(4px)' }}
+              >
+                Go to questions <ChevronRight size={14} />
+              </button>
             </>
           ) : (
+            /* ── TTS fallback ── */
             <>
-              <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 6 }}>Ready to listen</div>
-              <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 20 }}>Press play to hear the {meta.label} recording. You can replay it as many times as you need.</div>
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-                <button onClick={() => playTrack(track)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '11px 28px', background: meta.color, color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
-                  <Volume2 size={16} /> Play recording
-                </button>
-                <button onClick={goToQuiz} style={{ padding: '11px 20px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'transparent', fontSize: 13, cursor: 'pointer' }}>
-                  Skip to questions
-                </button>
-              </div>
+              {playing ? (
+                <>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.85)', textAlign: 'center', marginBottom: 10 }}>
+                    Now speaking — {fmt(playTime)}
+                  </div>
+                  <AnimatedBars color="#fff" tick={playTime} />
+                  <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 18 }}>
+                    <button onClick={stopAudio} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 20px', background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.4)', borderRadius: 'var(--radius-md)', fontSize: 13, cursor: 'pointer' }}>
+                      Stop
+                    </button>
+                    <button onClick={goToQuiz} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 20px', background: '#fff', color: meta.color, border: 'none', borderRadius: 'var(--radius-md)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                      Go to questions <ChevronRight size={13} />
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ textAlign: 'center', marginBottom: 18 }}>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: '#fff', marginBottom: 6 }}>Ready to listen</div>
+                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>
+                      Press play to hear the {meta.label} recording via browser TTS.
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+                    <button onClick={() => playTTS(track)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '11px 28px', background: '#fff', color: meta.color, border: 'none', borderRadius: 'var(--radius-md)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                      <Volume2 size={16} /> Play recording
+                    </button>
+                    <button onClick={goToQuiz} style={{ padding: '11px 20px', background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.4)', borderRadius: 'var(--radius-md)', fontSize: 13, cursor: 'pointer' }}>
+                      Skip to questions
+                    </button>
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>
 
         <div style={{ background: 'var(--gray-100)', borderRadius: 'var(--radius-md)', padding: '12px 16px', fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.65 }}>
-          <strong>IELTS tip:</strong> In the real exam you hear each recording only once. Practise listening without pausing to simulate exam conditions. Focus on key details: names, numbers, dates, and locations.
+          <strong>IELTS tip:</strong> In the real exam you hear each recording only once. Practise without pausing to simulate exam conditions. Focus on key details: names, numbers, dates, and locations.
         </div>
 
         <button onClick={() => setShowTranscript(v => !v)} style={{ marginTop: 10, width: '100%', padding: 10, border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'transparent', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -424,9 +537,9 @@ export default function ListeningTrainer() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 12, marginBottom: 24 }}>
             {filteredTracks.map((t, i) => {
-              const meta      = ACCENT_META[t.accent];
-              const done      = completedIds.has(t.id);
-              const qCount    = qs(t).length;   // ← safe via helper
+              const meta   = ACCENT_META[t.accent];
+              const done   = completedIds.has(t.id);
+              const qCount = qs(t).length;
               return (
                 <div key={t.id} onClick={() => startTrack(t)} style={{
                   background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)',
@@ -438,14 +551,14 @@ export default function ListeningTrainer() {
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                     <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 10, background: meta.bg, color: meta.color }}>{meta.flag} {t.levelName}</span>
-                    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 500, background: done ? '#E1F5EE' : 'var(--purple-light)', color: done ? '#085041' : 'var(--purple-dark)' }}>{done ? 'Done' : 'Start'}</span>
+                    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 500, background: done ? '#E1F5EE' : 'var(--purple-light)', color: done ? '#085041' : 'var(--purple-dark)' }}>{done ? 'Done ✓' : t.audioUrl ? '🎵 Audio' : 'TTS'}</span>
                   </div>
                   <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 4 }}>{t.title}</div>
                   <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 10 }}>
                     {t.topic} · {t.duration} · {qCount} question{qCount !== 1 ? 's' : ''}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-tertiary)' }}>
-                    <Volume2 size={12} /> Click to listen
+                    <Volume2 size={12} /> Click to {t.audioUrl ? 'listen (real audio)' : 'listen'}
                   </div>
                 </div>
               );

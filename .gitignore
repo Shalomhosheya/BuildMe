@@ -39,4 +39,8 @@ Thumbs.db
 .vercel
 
 # netlify
-.netlify
+.netlify.env
+.env
+".env" 
+.env
+echo ".env" >> .gitignore
