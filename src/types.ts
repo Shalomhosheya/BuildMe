@@ -1,4 +1,4 @@
-export type Screen = 'dashboard' | 'quiz' | 'ai-tutor' | 'notes' | 'portfolio' | 'speaking';
+export type Screen = 'dashboard' | 'quiz' | 'ai-tutor' | 'notes' | 'portfolio' | 'speaking' | 'listening' | 'essay';
 
 export interface Skill {
   id: string; name: string; level: number; levelName: string;
