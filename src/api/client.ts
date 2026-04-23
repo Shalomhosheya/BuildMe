@@ -19,11 +19,14 @@ async function request<T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  
+
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
     headers,
   });
 
+  // 🔐 Handle auth failure
   if (res.status === 401) {
     localStorage.removeItem('buildme_token');
     localStorage.removeItem('buildme_user');
@@ -31,14 +34,25 @@ async function request<T>(
     throw new Error('Session expired — please log in again');
   }
 
-  const data = await res.json();
+  // 🔥 SAFE parsing (this fixes your crash)
+  let data: any = null;
+  const text = await res.text();
 
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch (err) {
+    console.error('Invalid JSON response:', text);
+    throw new Error('Server returned invalid JSON');
+  }
+
+  // ❗ Handle errors AFTER parsing safely
   if (!res.ok) {
-    throw new Error(data.message || `Request failed: ${res.status}`);
+    throw new Error(data?.message || `Request failed: ${res.status}`);
   }
 
   return data as T;
 }
+
 
 export const api = {
   get:    <T>(path: string)                    => request<T>(path),

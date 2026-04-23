@@ -6,14 +6,14 @@ import Login from './login';
 import Sidebar from './Sidebar';
 import Dashboard from './Dashboard';
 import Quiz from './Quiz';
-import AiTutor from './AiTutor';
+import IELTSChatbot from './IELTSChatbot';
 import Notes from './Notes';
 import Portfolio from './Portfolio';
 import Speaking from './Speaking';
 import ListeningTrainer from './ListeningTrainer';
 import EssayEvaluator from './EssayEvaluator';
 
-const FULL_HEIGHT: Screen[] = ['ai-tutor', 'notes', 'essay'];
+const FULL_HEIGHT: Screen[] = ['chatbot', 'notes', 'essay'];
 
 export default function App() {
   const [authed, setAuthed] = useState<boolean>(isLoggedIn());
@@ -30,8 +30,8 @@ export default function App() {
     switch (screen) {
       case 'dashboard':  return <Dashboard onNav={setScreen} />;
       case 'quiz':       return <Quiz />;
+      case 'chatbot':    return <IELTSChatbot />;
       case 'essay':      return <EssayEvaluator />;
-      case 'ai-tutor':   return <AiTutor />;
       case 'notes':      return <Notes />;
       case 'speaking':   return <Speaking />;
       case 'listening':  return <ListeningTrainer />;

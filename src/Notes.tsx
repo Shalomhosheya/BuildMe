@@ -59,28 +59,71 @@ export default function Notes() {
   }
 
   function markUnsaved() { setSaved(false); }
-
-  async function saveNote() {
-    setSaving(true);
-    try {
-      if (activeId && notes.find(n => n.id === activeId)) {
-        // Update existing
-        const updated = await notesApi.update(activeId, title, content, tag);
-        setNotes(ns => ns.map(n => n.id === activeId ? updated : n));
-      } else {
-        // Create new
-        const created = await notesApi.create(title || 'Untitled', content, tag);
-        setNotes(ns => [created, ...ns.filter(n => n.id !== activeId)]);
-        setActiveId(created.id);
-      }
-      setSaved(true);
-      showToast('Note saved');
-    } catch (e: any) {
-      showToast(e.message || 'Failed to save note');
-    } finally {
-      setSaving(false);
-    }
+ async function updateNote() {
+  if (!activeId || activeId.startsWith('new-')) {
+    showToast("Save note first before updating");
+    return;
   }
+
+  setSaving(true);
+
+  try {
+    const updated = await notesApi.update(
+      activeId,
+      title,
+      content,
+      tag
+    );
+
+    setNotes(ns =>
+      ns.map(n => n.id === activeId ? updated : n)
+    );
+
+    setSaved(true);
+    showToast("Updated");
+
+  } catch (e: any) {
+    showToast(e.message);
+  } finally {
+    setSaving(false);
+  }
+}
+
+ async function saveNote() {
+  setSaving(true);
+
+  try {
+    if (activeId && !activeId.startsWith('new-')) {
+      // UPDATE real note
+      const updated = await notesApi.update(activeId, title, content, tag);
+
+      setNotes(ns =>
+        ns.map(n => n.id === activeId ? updated : n)
+      );
+
+    } else {
+      // CREATE new note
+      const created = await notesApi.create(
+        title || 'Untitled',
+        content,
+        tag
+      );
+
+      setNotes(ns => [created, ...ns.filter(n => n.id !== activeId)]);
+      setActiveId(created.id);
+    }
+
+    setSaved(true);
+    showToast('Saved');
+
+  } catch (e: any) {
+    showToast(e.message);
+  } finally {
+    setSaving(false);
+  }
+}
+
+
 
   function newNote() {
     const tempId = `new-${Date.now()}`;

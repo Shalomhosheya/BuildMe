@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Screen } from './types';
 import { 
-  LayoutDashboard, PenLine, BookOpen, Headphones, Mic, 
+  LayoutDashboard, PenLine, BookOpen, Headphones, Mic, MessageCircle,
   Timer, MessageSquare, FileText, Award, LogOut 
 } from 'lucide-react';
 import { authApi } from './api/auth';
@@ -16,13 +16,10 @@ const NAV = [
   { screen: 'dashboard' as Screen, label: 'Dashboard',    icon: LayoutDashboard, section: null },
   { screen: null,                   label: 'Learn',        icon: null,            section: true },
   { screen: 'listening' as Screen, label: 'Listening trainer', icon: Headphones, section: null },
-  { screen: 'ai-tutor' as Screen,  label: 'Writing',      icon: PenLine,         section: null },
-  { screen: 'ai-tutor' as Screen,  label: 'Reading',      icon: BookOpen,        section: null },
-  { screen: 'ai-tutor' as Screen,  label: 'Listening',    icon: Headphones,      section: null },
+  { screen: 'chatbot' as Screen, label: 'IELTS Assistant', icon: MessageCircle},
   { screen: 'speaking' as Screen,  label: 'Speaking trainer',     icon: Mic,             section: null },
   { screen: null,                   label: 'Practice',     icon: null,            section: true },
   { screen: 'quiz' as Screen,      label: 'Quiz',         icon: Timer,           section: null },
-  { screen: 'ai-tutor' as Screen,  label: 'AI tutor',     icon: MessageSquare,   section: null },
   { screen: 'notes' as Screen,     label: 'Notes',        icon: FileText,        section: null },
   { screen: null,                   label: 'Portfolio',    icon: null,            section: true },
   { screen: 'portfolio' as Screen, label: 'My portfolio', icon: Award,           section: null },
@@ -34,7 +31,7 @@ function getActiveLabel(screen: Screen): string {
   const map: Partial<Record<Screen, string>> = {
     dashboard: 'Dashboard',
     quiz: 'Quiz',
-    'ai-tutor': 'AI tutor',
+    // 'ai-tutor': 'AI tutor',
     speaking:"speaking",
     notes: 'Notes',
     portfolio: 'My portfolio',

@@ -1,4 +1,4 @@
-export type Screen = 'dashboard' | 'quiz' | 'ai-tutor' | 'notes' | 'portfolio' | 'speaking' | 'listening' | 'essay';
+export type Screen = 'dashboard' | 'quiz' | 'chatbot' | 'notes' | 'portfolio' | 'speaking' | 'listening' | 'essay';
 
 export interface Skill {
   id: string; name: string; level: number; levelName: string;
@@ -15,6 +15,6 @@ export interface QuizQuestion {
 }
 export interface QuizSet {
   id: string; skill: string; title: string; desc: string;
-  level: number; levelName: string; pts: number; done: boolean;passage?: string;
+  level: number; levelName: string; pts: number; done: boolean;
   questions: QuizQuestion[];
 }
