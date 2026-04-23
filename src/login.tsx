@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { authApi, saveSession } from './api/auth';
 import ImageTrail from './component/ui/ImageTrail'; // Import the trail component
-// Or use ParticleTrail: import ParticleTrail from './components/ui/ParticleTrail';
 
 interface LoginProps {
   onLogin: () => void;
@@ -48,32 +47,41 @@ export default function Login({ onLogin }: LoginProps) {
     }}>
       {/* Image Trail Animation */}
       <ImageTrail
-      items={[
-        'https://picsum.photos/id/287/300/300',
-        'https://picsum.photos/id/1001/300/300',
-        'https://picsum.photos/id/1025/300/300',
-        'https://picsum.photos/id/1026/300/300',
-        'https://picsum.photos/id/1027/300/300',
-        'https://picsum.photos/id/1028/300/300',
-        'https://picsum.photos/id/1029/300/300',
-        'https://picsum.photos/id/1030/300/300',
-        'https://picsum.photos/id/104/300/300',
-        'https://picsum.photos/id/106/300/300',
-        'https://picsum.photos/id/107/300/300',
-        'https://picsum.photos/id/108/300/300',
-      ]}
-      variant="1"
-      trailLength={12}
-      trailDelay={50}
-      imageSize={80}
-      fadeOutDuration={700}
-      randomRotation={true}
-      randomScale={true}
-      interactionRadius={150}
-      gravity={0.005}
-      airResistance={0.5}
-      bounce={0.4}
-    />
+  items={[
+    // IELTS Academic Images
+    'https://cdn-icons-png.flaticon.com/512/1995/1995574.png', // IELTS logo/book
+    'https://cdn-icons-png.flaticon.com/512/2906/2906364.png', // Writing/pen
+    'https://cdn-icons-png.flaticon.com/512/3774/3774298.png', // Speaking/microphone
+    'https://cdn-icons-png.flaticon.com/512/709/709612.png',  // Listening/headphones
+    'https://cdn-icons-png.flaticon.com/512/1791/1791536.png', // Reading/book
+    'https://cdn-icons-png.flaticon.com/512/1907/1907566.png', // Checkmark/certificate
+    'https://cdn-icons-png.flaticon.com/512/2331/2331966.png', // Target/goal
+    'https://cdn-icons-png.flaticon.com/512/3094/3094758.png', // Education/graduation cap
+    'https://cdn-icons-png.flaticon.com/512/1077/1077114.png', // Brain/knowledge
+    'https://cdn-icons-png.flaticon.com/512/2612/2612349.png', // Clock/time management
+    'https://cdn-icons-png.flaticon.com/512/489/489858.png',  // Lightbulb/idea
+    'https://cdn-icons-png.flaticon.com/512/1041/1041918.png', // Chat/speaking bubbles
+    'https://cdn-icons-png.flaticon.com/512/1436/1436690.png', // Document/essay
+    'https://cdn-icons-png.flaticon.com/512/2948/2948076.png', // Trophy/achievement
+    'https://cdn-icons-png.flaticon.com/512/2111/2111612.png', // World/global
+    'https://cdn-icons-png.flaticon.com/512/1055/1055687.png', // Dictionary/spelling
+    'https://cdn-icons-png.flaticon.com/512/2885/2885444.png', // Grammar/correct
+    'https://cdn-icons-png.flaticon.com/512/4556/4556613.png', // Vocabulary/words
+    'https://cdn-icons-png.flaticon.com/512/3721/3721710.png', // Practice/study
+    'https://cdn-icons-png.flaticon.com/512/4213/4213300.png', // Exam/test
+  ]}
+  variant="1"
+  trailLength={15}
+  trailDelay={25}
+  imageSize={70}
+  fadeOutDuration={700}
+  randomRotation={true}
+  randomScale={true}
+  interactionRadius={150}
+  gravity={0.005}
+  airResistance={0.5}
+  bounce={0.4}
+/>
   
       
       {/* Login Form Container - with higher z-index */}
