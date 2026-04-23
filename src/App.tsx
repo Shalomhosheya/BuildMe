@@ -1,3 +1,4 @@
+// App.tsx
 import React, { useState } from 'react';
 import './index.css';
 import { Screen } from './types';
@@ -15,6 +16,7 @@ import EssayEvaluator from './EssayEvaluator';
 import MagicRings from './component/ui/MagicRings';
 
 const FULL_HEIGHT: Screen[] = ['chatbot', 'notes', 'essay'];
+const HIDE_ANIMATION_SCREENS: Screen[] = ['notes','essay']; // Add screens where animation should be hidden
 
 export default function App() {
   const [authed, setAuthed] = useState<boolean>(isLoggedIn());
@@ -26,6 +28,7 @@ export default function App() {
   if (!authed) return <Login onLogin={handleLogin} />;
 
   const isFullHeight = FULL_HEIGHT.includes(screen);
+  const shouldShowAnimation = !HIDE_ANIMATION_SCREENS.includes(screen); // Logic to hide animation
 
   const renderScreen = () => {
     switch (screen) {
@@ -45,21 +48,22 @@ export default function App() {
     <div style={{ 
       display: 'flex', 
       minHeight: '100vh', 
-      background: 'var(--bg)',
+      background: 'white',
       position: 'relative',
       overflow: 'hidden'
     }}>
-      {/* Background Animation */}
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 0,
-        pointerEvents: 'none' // Allows clicks to pass through to content
-      }}>
-        <MagicRings
+      {/* Background Animation - Conditionally rendered */}
+      {shouldShowAnimation && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 0,
+          pointerEvents: 'none'
+        }}>
+           <MagicRings
           color="#A855F7"
           colorTwo="#6366F1"
           ringCount={6}
@@ -82,7 +86,8 @@ export default function App() {
           parallax={0.05}
           clickBurst={true} // Enable click effect
         />
-      </div>
+        </div>
+      )}
       
       {/* Content */}
       <Sidebar active={screen} onNav={setScreen} onLogout={handleLogout} />
@@ -92,7 +97,8 @@ export default function App() {
         display: 'flex', 
         flexDirection: 'column',
         position: 'relative',
-        zIndex: 1
+        zIndex: 1,
+        background: shouldShowAnimation ? 'transparent' : 'white' // Optional: ensure black background when animation is hidden
       }}>
         {renderScreen()}
       </main>
