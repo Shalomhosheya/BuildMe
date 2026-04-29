@@ -22,6 +22,8 @@ const SKILLS: { key: Skill; label: string; color: string; bg: string; query: str
   { key: 'speaking',  label: 'Speaking',  color: '#9A3412', bg: '#FFEDD5', query: 'IELTS speaking band 9 tips' },
 ];
 
+
+
 // Get API key from environment variables (Vite)
 const YOUTUBE_API_KEY = "AIzaSyAKPuvRvz-1Pq8qJIlOecUIZFXYGu1Sv1k";
 
@@ -64,6 +66,25 @@ async function searchYouTube(query: string, pageToken?: string): Promise<{ video
   };
 }
 
+function isIELTSQuery(query: string): boolean {
+  const q = query.toLowerCase();
+
+  // Must contain IELTS or related keywords
+  const allowedKeywords = [
+    'ielts',
+    'reading',
+    'writing',
+    'listening',
+    'speaking',
+    'band',
+    'task 1',
+    'task 2',
+    'academic',
+    'general'
+  ];
+
+  return allowedKeywords.some(keyword => q.includes(keyword));
+}
 // Format relative date
 function relativeDate(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -274,26 +295,33 @@ export default function IELTSVideos() {
     return activeSkillMeta.query;
   }, [activeSkill, customQuery]);
 
-  const fetchVideos = useCallback(async (reset = true) => {
-    if (noApiKey) return;
+const fetchVideos = useCallback(async (reset = true) => {
+  if (noApiKey) return;
 
-    setLoading(true);
-    setError('');
+  const query = effectiveQuery();
 
-    try {
-      const token = reset ? undefined : nextPageToken;
-      const result = await searchYouTube(effectiveQuery(), token);
+  // 🚫 Extra safety
+  if (!isIELTSQuery(query)) {
+    setVideos([]);
+    return;
+  }
 
-      setVideos(prev => reset ? result.videos : [...prev, ...result.videos]);
-      setNextPageToken(result.nextPageToken);
-    } catch (err) {
-      console.error(err);
-      setError('Failed to load videos. Please check your API key and internet connection.');
-    } finally {
-      setLoading(false);
-    }
-  }, [effectiveQuery, nextPageToken, noApiKey]);
+  setLoading(true);
+  setError('');
 
+  try {
+    const token = reset ? undefined : nextPageToken;
+    const result = await searchYouTube(query, token);
+
+    setVideos(prev => reset ? result.videos : [...prev, ...result.videos]);
+    setNextPageToken(result.nextPageToken);
+  } catch (err) {
+    console.error(err);
+    setError('Failed to load videos.');
+  } finally {
+    setLoading(false);
+  }
+}, [effectiveQuery, nextPageToken, noApiKey]);
   // Fetch when skill changes (only if no custom query)
   useEffect(() => {
     if (!customQuery.trim()) {
@@ -314,9 +342,20 @@ export default function IELTSVideos() {
   }, [customQuery, fetchVideos]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setCustomQuery(searchInput.trim());
-  };
+  e.preventDefault();
+
+  const query = searchInput.trim();
+
+  // 🚫 Block non-IELTS searches
+  if (!isIELTSQuery(query)) {
+    setVideos([]); // clear results
+    setError('Only IELTS-related searches are allowed.');
+    return;
+  }
+
+  setError('');
+  setCustomQuery(query);
+};
 
   const clearSearch = () => {
     setSearchInput('');
