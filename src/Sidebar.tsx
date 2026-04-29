@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Screen } from './types';
 import { 
   LayoutDashboard, PenLine, BookOpen, Headphones, Mic, MessageCircle,
-  Timer, MessageSquare, FileText, Award, LogOut 
+  Timer, MessageSquare, FileText, Award, LogOut, Youtube
 } from 'lucide-react';
 import { authApi } from './api/auth';
 
@@ -13,28 +13,29 @@ interface SidebarProps {
 }
 
 const NAV = [
-  { screen: 'dashboard' as Screen, label: 'Dashboard',    icon: LayoutDashboard, section: null },
-  { screen: null,                   label: 'Learn',        icon: null,            section: true },
-  { screen: 'listening' as Screen, label: 'Listening trainer', icon: Headphones, section: null },
-  { screen: 'chatbot' as Screen, label: 'IELTS Assistant', icon: MessageCircle},
-  { screen: 'speaking' as Screen,  label: 'Speaking trainer',     icon: Mic,             section: null },
-  { screen: null,                   label: 'Practice',     icon: null,            section: true },
-  { screen: 'quiz' as Screen,      label: 'Quiz',         icon: Timer,           section: null },
-  { screen: 'notes' as Screen,     label: 'Notes',        icon: FileText,        section: null },
-  { screen: null,                   label: 'Portfolio',    icon: null,            section: true },
-  { screen: 'portfolio' as Screen, label: 'My portfolio', icon: Award,           section: null },
-  { screen: 'essay' as Screen, label: 'Writing evaluator', icon: PenLine, section: null }
+  { screen: 'dashboard' as Screen, label: 'Dashboard',         icon: LayoutDashboard, section: null },
+  { screen: null,                   label: 'Learn',             icon: null,            section: true },
+  { screen: 'listening' as Screen, label: 'Listening trainer',  icon: Headphones,      section: null },
+  { screen: 'chatbot'   as Screen, label: 'IELTS Assistant',    icon: MessageCircle,   section: null },
+  { screen: 'speaking'  as Screen, label: 'Speaking trainer',   icon: Mic,             section: null },
+  { screen: null,                   label: 'Practice',          icon: null,            section: true },
+  { screen: 'quiz'      as Screen, label: 'Quiz',              icon: Timer,           section: null },
+  { screen: 'notes'     as Screen, label: 'Notes',             icon: FileText,        section: null },
+  { screen: null,                   label: 'Portfolio',         icon: null,            section: true },
+  { screen: 'portfolio' as Screen, label: 'My portfolio',      icon: Award,           section: null },
+  { screen: 'essay'     as Screen, label: 'Writing evaluator', icon: PenLine,         section: null },
+  { screen: null,                   label: 'Resources',         icon: null,            section: true },
+  { screen: 'videos'    as Screen, label: 'IELTS Videos',      icon: Youtube,         section: null },
 ];
 
 function getActiveLabel(screen: Screen): string {
-  // Use Partial so missing keys like authform won't break TS
   const map: Partial<Record<Screen, string>> = {
-    dashboard: 'Dashboard',
-    quiz: 'Quiz',
-    // 'ai-tutor': 'AI tutor',
-    speaking:"speaking",
-    notes: 'Notes',
-    portfolio: 'My portfolio',
+    dashboard:  'Dashboard',
+    quiz:       'Quiz',
+    speaking:   'Speaking trainer',
+    notes:      'Notes',
+    portfolio:  'My portfolio',
+    videos:     'IELTS Videos',
   };
   return map[screen] ?? '';
 }
@@ -94,7 +95,7 @@ export default function Sidebar({ active, onNav, onLogout }: SidebarProps) {
             );
           }
           const Icon = item.icon!;
-          const isActive = item.screen === active && item.label === getActiveLabel(active);
+          const isActive = item.screen === active;
           return (
             <button key={i} onClick={() => item.screen && onNav(item.screen)}
               style={{
@@ -148,14 +149,14 @@ export default function Sidebar({ active, onNav, onLogout }: SidebarProps) {
             transition: 'all 0.15s',
           }}
           onMouseEnter={e => {
-            (e.currentTarget.style.background   = '#FCEBEB');
-            (e.currentTarget.style.color        = '#791F1F');
-            (e.currentTarget.style.borderColor  = '#E24B4A');
+            (e.currentTarget.style.background  = '#FCEBEB');
+            (e.currentTarget.style.color       = '#791F1F');
+            (e.currentTarget.style.borderColor = '#E24B4A');
           }}
           onMouseLeave={e => {
-            (e.currentTarget.style.background   = 'transparent');
-            (e.currentTarget.style.color        = 'var(--text-secondary)');
-            (e.currentTarget.style.borderColor  = 'var(--border)');
+            (e.currentTarget.style.background  = 'transparent');
+            (e.currentTarget.style.color       = 'var(--text-secondary)');
+            (e.currentTarget.style.borderColor = 'var(--border)');
           }}
         >
           <LogOut size={13} /> Sign out

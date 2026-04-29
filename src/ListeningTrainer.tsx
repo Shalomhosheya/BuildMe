@@ -6,9 +6,9 @@ import { speakText } from './tts';
 
 type Stage = 'pick' | 'listening' | 'quiz' | 'result';
 
-const ACCENTS: Accent[] = ['british', 'australian', 'american'];
+const ACCENTS: Accent[] = ['british', 'australian', 'american', 'african', 'indian', 'chinese'];
 
-// ─── WavePlayer (inline so no extra import needed) ───────────────────────────
+// ─── WavePlayer ───────────────────────────────────────────────────────────────
 function WavePlayer({ audioUrl, accentColor }: { audioUrl: string; accentColor: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wsRef        = useRef<WaveSurfer | null>(null);
@@ -49,17 +49,8 @@ function WavePlayer({ audioUrl, accentColor }: { audioUrl: string; accentColor: 
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
   return (
-    
-    <div style={{
-      background: accentColor,
-      borderRadius: 16,
-      padding: '20px 24px',
-      boxShadow: `0 8px 32px ${accentColor}55`,
-    }}>
-      {/* waveform */}
+    <div style={{ background: accentColor, borderRadius: 16, padding: '20px 24px', boxShadow: `0 8px 32px ${accentColor}55` }}>
       <div ref={containerRef} style={{ marginBottom: 14, opacity: ready ? 1 : 0.4, transition: 'opacity 0.3s' }} />
-
-      {/* controls row */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         <button
           onClick={toggle}
@@ -70,21 +61,16 @@ function WavePlayer({ audioUrl, accentColor }: { audioUrl: string; accentColor: 
             border: '2px solid rgba(255,255,255,0.55)',
             color: '#fff', cursor: ready ? 'pointer' : 'default',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'transform 0.12s, background 0.12s',
-            flexShrink: 0,
+            transition: 'transform 0.12s, background 0.12s', flexShrink: 0,
           }}
           onMouseEnter={e => ready && ((e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.35)')}
           onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.22)')}
         >
           {playing ? <Pause size={18} fill="#fff" /> : <Play size={18} fill="#fff" />}
         </button>
-
-        {/* time */}
         <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', fontVariantNumeric: 'tabular-nums', minWidth: 80 }}>
           {fmt(current)} / {fmt(duration)}
         </span>
-
-        {/* thin progress bar (fallback visual when waveform is loading) */}
         {!ready && (
           <div style={{ flex: 1, height: 4, background: 'rgba(255,255,255,0.2)', borderRadius: 2 }}>
             <div style={{ width: '30%', height: '100%', background: 'rgba(255,255,255,0.5)', borderRadius: 2, animation: 'pulse 1.4s ease infinite' }} />
@@ -112,19 +98,19 @@ function AnimatedBars({ color, tick }: { color: string; tick: number }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function ListeningTrainer() {
-  const [accent, setAccent]         = useState<Accent | null>(null);
-  const [tracks, setTracks]         = useState<ListeningTrack[]>(LOCAL_TRACKS);
-  const [track,  setTrack]          = useState<ListeningTrack | null>(null);
-  const [stage,  setStage]          = useState<Stage>('pick');
-  const [answers,  setAnswers]      = useState<Record<number, number>>({});
-  const [answered, setAnswered]     = useState<Record<number, boolean>>({});
-  const [score,    setScore]        = useState(0);
-  const [submitting, setSubmitting] = useState(false);
-  const [serverPts,  setServerPts]  = useState<number | null>(null);
-  const [history,    setHistory]    = useState<ListeningAttempt[]>([]);
+  const [accent,      setAccent]      = useState<Accent | null>(null);
+  const [tracks,      setTracks]      = useState<ListeningTrack[]>(LOCAL_TRACKS);
+  const [track,       setTrack]       = useState<ListeningTrack | null>(null);
+  const [stage,       setStage]       = useState<Stage>('pick');
+  const [answers,     setAnswers]     = useState<Record<number, number>>({});
+  const [answered,    setAnswered]    = useState<Record<number, boolean>>({});
+  const [score,       setScore]       = useState(0);
+  const [submitting,  setSubmitting]  = useState(false);
+  const [serverPts,   setServerPts]   = useState<number | null>(null);
+  const [history,     setHistory]     = useState<ListeningAttempt[]>([]);
   const [showTranscript, setShowTranscript] = useState(false);
-  const [playing,  setPlaying]      = useState(false);
-  const [playTime, setPlayTime]     = useState(0);
+  const [playing,     setPlaying]     = useState(false);
+  const [playTime,    setPlayTime]    = useState(0);
   const [filterLevel, setFilterLevel] = useState<string>('all');
 
   const timer   = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -144,28 +130,47 @@ export default function ListeningTrainer() {
   // ── Accent selection ─────────────────────────────────────────────────────
   function selectAccent(a: Accent) {
     setAccent(a);
-    setTracks(LOCAL_TRACKS.filter(t => t.accent === a));
+    setFilterLevel('all'); // reset level filter on accent change
 
-    // Fetch from backend, then MERGE with local data so transcript/questions are never lost
-    listeningApi.getTracks(a).then(remote => {
-      const localMap = Object.fromEntries(LOCAL_TRACKS.map(t => [t.id, t]));
-      const merged = remote.map(r => ({
-        ...localMap[r.id],   // local base (has transcript + questions)
-        ...r,                // backend fields override (title, level, audioUrl …)
-        // but always keep local transcript & questions if backend omits them
-        transcript: r.transcript || localMap[r.id]?.transcript || '',
-        questions:  (r.questions?.length ? r.questions : localMap[r.id]?.questions) ?? [],
-      }));
-      setTracks(merged);
-    }).catch(() => {});
+    // Immediately show local tracks so UI is never empty
+    const localForAccent = LOCAL_TRACKS.filter(t => t.accent === a);
+    setTracks(localForAccent);
+
+    // Try to enrich from backend — but NEVER remove local tracks
+    listeningApi.getTracks(a)
+      .then(remote => {
+        // Build a map of local tracks by id so we can merge
+        const localMap = Object.fromEntries(
+          LOCAL_TRACKS.filter(t => t.accent === a).map(t => [t.id, t])
+        );
+
+        // Merge remote tracks with local data (keep local transcript/questions)
+        const mergedFromRemote = remote.map(r => ({
+          ...localMap[r.id],            // local base first
+          ...r,                         // remote fields override
+          // Always prefer local transcript & questions if remote omits them
+          transcript: r.transcript || localMap[r.id]?.transcript || '',
+          questions:  (r.questions?.length ? r.questions : localMap[r.id]?.questions) ?? [],
+        }));
+
+        // Also keep any local tracks the backend didn't return at all
+        const remoteIds = new Set(remote.map(r => r.id));
+        const localOnly = localForAccent.filter(t => !remoteIds.has(t.id));
+
+        // Combine: merged remote + local-only, sorted by level
+        const combined = [...mergedFromRemote, ...localOnly]
+          .sort((a, b) => a.level - b.level);
+
+        setTracks(combined);
+      })
+      .catch(() => {
+        // Backend failed — local tracks already set above, nothing to do
+      });
   }
 
   // ── TTS playback ─────────────────────────────────────────────────────────
   async function playTTS(t: ListeningTrack) {
     stopAudio();
-    console.log(import.meta.env.VITE_ELEVENLABS_API_KEY)
-    console.log('Transcript:', t.transcript?.slice(0, 50));
-    console.log('Accent:', t.accent);
     const text = t.transcript?.trim();
     if (!text) return;
 
@@ -200,7 +205,6 @@ export default function ListeningTrainer() {
     setShowTranscript(false);
     setStage('listening');
     setPlayTime(0);
-    // Only use TTS when there is no real audioUrl
     if (!t.audioUrl) playTTS(t);
   }
 
@@ -242,8 +246,10 @@ export default function ListeningTrainer() {
   }
 
   // ── Derived ──────────────────────────────────────────────────────────────
-  const filteredTracks = tracks.filter(t => filterLevel === 'all' || String(t.level) === filterLevel);
-  const completedIds   = new Set(history.map(h => h.trackId));
+  const filteredTracks = tracks.filter(t =>
+    filterLevel === 'all' || String(t.level) === filterLevel
+  );
+  const completedIds = new Set(history.map(h => h.trackId));
 
   // ════════════════════════════════════════════════════════════════════════
   // RESULT SCREEN
@@ -258,7 +264,6 @@ export default function ListeningTrainer() {
 
     return (
       <div style={{ padding: '32px 36px', maxWidth: 740 }} className="animate-fadeUp">
-        
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 400 }}>Results</h1>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -406,7 +411,6 @@ export default function ListeningTrainer() {
         </div>
 
         <div style={{ background: meta.color, borderRadius: 'var(--radius-xl)', padding: 28, marginBottom: 16, boxShadow: `0 8px 32px ${meta.color}44` }}>
-          {/* header */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
             <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, flexShrink: 0 }}>
               {meta.flag}
@@ -417,7 +421,6 @@ export default function ListeningTrainer() {
             </div>
           </div>
 
-          {/* ── Real audio: WaveSurfer ── */}
           {hasAudio ? (
             <>
               <WavePlayer audioUrl={track.audioUrl!} accentColor={meta.color} />
@@ -429,7 +432,6 @@ export default function ListeningTrainer() {
               </button>
             </>
           ) : (
-            /* ── TTS fallback ── */
             <>
               {playing ? (
                 <>
@@ -491,7 +493,7 @@ export default function ListeningTrainer() {
     <div style={{ padding: '32px 36px', maxWidth: 900 }} className="animate-fadeUp">
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 400, letterSpacing: '-0.5px' }}>Listening trainer</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginTop: 6 }}>Train your ear across three English accents — British, Australian, and American</p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginTop: 6 }}>Train your ear across six English accents — British, Australian, American, African, Indian and Chinese</p>
       </div>
 
       {/* Accent selector */}
@@ -524,7 +526,7 @@ export default function ListeningTrainer() {
         <>
           <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
             <span style={{ fontSize: 13, fontWeight: 500, marginRight: 4 }}>{ACCENT_META[accent].flag} Tracks:</span>
-            {[['all','All levels'],['1','Level 1'],['2','Level 2'],['3','Level 3']].map(([val, label]) => (
+            {[['all', 'All levels'], ['1', 'Level 1'], ['2', 'Level 2'], ['3', 'Level 3']].map(([val, label]) => (
               <button key={val} onClick={() => setFilterLevel(val!)} style={{
                 padding: '5px 14px', fontSize: 12, borderRadius: 20, cursor: 'pointer',
                 border: `1px solid ${filterLevel === val ? ACCENT_META[accent].color : 'var(--border)'}`,
