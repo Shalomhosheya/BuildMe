@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronRight, CheckCircle, XCircle, Volume2, RotateCcw, BookOpen, Mic, TrendingUp } from 'lucide-react';
+import { ChevronRight, CheckCircle, XCircle, Volume2, RotateCcw, BookOpen, TrendingUp } from 'lucide-react';
 import { listeningApi, LOCAL_TRACKS, ACCENT_META, Accent, ListeningTrack, ListeningAttempt } from './api/listening';
 import { predictListeningPerformance, PerformancePrediction } from './api/recommendations';
+import { speakText } from './tts';
 
 type Stage = 'pick' | 'listening' | 'quiz' | 'result';
 
@@ -24,7 +25,7 @@ export default function ListeningTrainer() {
   const [playTime, setPlayTime]     = useState(0);
   const [filterLevel, setFilterLevel] = useState<string>('all');
 
-  const synth    = useRef<SpeechSynthesisUtterance | null>(null);
+  const stopFn   = useRef<(() => void) | null>(null);
   const timer    = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -48,31 +49,22 @@ export default function ListeningTrainer() {
     setPlaying(true);
     setPlayTime(0);
 
-    const utt        = new SpeechSynthesisUtterance(t.transcript);
-    utt.rate         = 0.88;
-    utt.pitch        = 1.0;
-    utt.volume       = 1.0;
-
-    // Pick appropriate voice by accent
-    const voices = window.speechSynthesis.getVoices();
-    const voiceMap: Record<Accent, string[]> = {
-      british:    ['Daniel', 'Kate', 'Serena', 'en-GB'],
-      australian: ['Karen', 'Lee', 'en-AU'],
-      american:   ['Alex', 'Samantha', 'Zoe', 'en-US'],
-    };
-    const preferred = voiceMap[t.accent];
-    const found = voices.find(v => preferred.some(p => v.name.includes(p) || v.lang.includes(p)));
-    if (found) utt.voice = found;
-
-    utt.onend = () => { setPlaying(false); clearInterval(timer.current!); };
-    synth.current = utt;
-    window.speechSynthesis.speak(utt);
-
     timer.current = setInterval(() => setPlayTime(s => s + 1), 1000);
+
+    // Use speakText from tts.tsx — tries ElevenLabs first, then Web Speech
+    speakText(t.transcript, t.accent, () => {
+      setPlaying(false);
+      if (timer.current) clearInterval(timer.current);
+    }).then(stop => {
+      stopFn.current = stop;
+    }).catch(() => {
+      setPlaying(false);
+      if (timer.current) clearInterval(timer.current);
+    });
   }
 
   function stopAudio() {
-    window.speechSynthesis.cancel();
+    if (stopFn.current) { stopFn.current(); stopFn.current = null; }
     setPlaying(false);
     if (timer.current) clearInterval(timer.current);
   }
@@ -172,7 +164,7 @@ export default function ListeningTrainer() {
         </div>
 
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)', padding: 32, textAlign: 'center', marginBottom: 16 }}>
-          <div style={{ display: 'inline-block', width: 96, height: 96, borderRadius: '50%', background: passed ? '#E1F5EE' : '#FAEEDA', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 96, height: 96, borderRadius: '50%', background: passed ? '#E1F5EE' : '#FAEEDA', margin: '0 auto 16px' }}>
             {passed ? <CheckCircle size={40} color="#1D9E75" /> : <XCircle size={40} color="#BA7517" />}
           </div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 52, color: passed ? '#1D9E75' : '#BA7517', marginBottom: 4 }}>{pct}%</div>

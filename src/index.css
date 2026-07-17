@@ -32,6 +32,42 @@
   --sidebar-width: 240px;
   --font-display: 'DM Serif Display', Georgia, serif;
   --font-body: 'DM Sans', system-ui, sans-serif;
+
+  /* Semantic UI variables used in chatbot and essay screens */
+  --color-background-primary: var(--surface);
+  --color-background-secondary: var(--gray-50);
+  --color-border-secondary: var(--border-md);
+  --color-border-tertiary: var(--border);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+}
+
+[data-theme="dark"] {
+  --purple: #8B80F9;
+  --purple-light: #2A2659;
+  --purple-dark: #C7C2FF;
+  --teal: #2EC4B6;
+  --teal-light: #164843;
+  --amber: #E6A15C;
+  --amber-light: #52361B;
+  --coral: #FF7B54;
+  --coral-light: #5B271A;
+  --gray-50: #1C1917;
+  --gray-100: #292524;
+  --gray-200: #44403C;
+  --gray-400: #A8A29E;
+  --gray-600: #D6D3D1;
+  --gray-800: #F5F5F4;
+  --bg: #0C0A09;
+  --surface: #171514;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-md: rgba(255, 255, 255, 0.15);
+  --text-primary: #FAFAFA;
+  --text-secondary: #D6D3D1;
+  --text-tertiary: #A8A29E;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -66,3 +102,272 @@ input, textarea, select { font-family: var(--font-body); }
 
 .animate-fadeUp  { animation: fadeUp  0.4s ease both; }
 .animate-fadeIn  { animation: fadeIn  0.3s ease both; }
+
+/* ── Responsive & Navigation Layout Utilities ── */
+
+.desktop-only {
+  display: inherit !important;
+}
+.mobile-only {
+  display: none !important;
+}
+
+/* Sidebar structure defaults */
+.app-sidebar {
+  width: var(--sidebar-width);
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+  z-index: 100;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-backdrop {
+  display: none;
+}
+
+/* Mobile Header (Hidden on Desktop) */
+.mobile-header {
+  display: none !important;
+}
+
+/* Responsive Padding defaults */
+.responsive-padding {
+  padding: 32px 36px;
+}
+
+/* Responsive layouts on Tablet & Phone */
+@media (max-width: 1024px) {
+  .desktop-only {
+    display: none !important;
+  }
+  .mobile-only {
+    display: inherit !important;
+  }
+
+  .mobile-header {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    padding: 0 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 990;
+    flex-shrink: 0;
+  }
+
+  .app-sidebar {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    height: 100vh !important;
+    width: var(--sidebar-width) !important;
+    transform: translateX(-100%) !important;
+    z-index: 1050 !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12) !important;
+  }
+
+  .app-sidebar.open {
+    transform: translateX(0) !important;
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+    z-index: 1040;
+    animation: fadeIn 0.2s ease both;
+  }
+
+  .responsive-padding {
+    padding: 20px 16px !important;
+  }
+
+  /* Responsive overriding utilities */
+  .responsive-grid-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .responsive-grid-3 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .responsive-grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+  .responsive-layout-main {
+    grid-template-columns: 1fr !important;
+  }
+  .responsive-flex-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  /* Chatbot info sidebar */
+  .chatbot-sidebar {
+    position: fixed !important;
+    right: 0 !important;
+    top: 56px !important; /* height of mobile header */
+    bottom: 0 !important;
+    height: calc(100vh - 56px) !important;
+    width: 240px !important;
+    transform: translateX(100%) !important;
+    z-index: 1000 !important;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.08) !important;
+    border-left: 1px solid var(--border) !important;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease !important;
+  }
+  .chatbot-sidebar.open {
+    transform: translateX(0) !important;
+  }
+
+  .chatbot-filters {
+    overflow-x: auto;
+    padding-bottom: 4px;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+  .chatbot-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .chatbot-message-bubble {
+    max-width: 88% !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .responsive-grid-4 {
+    grid-template-columns: 1fr !important;
+  }
+  .responsive-grid-3 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Desktop Chatbot Sidebar collapsing support */
+@media (min-width: 1025px) {
+  .chatbot-sidebar {
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s ease, opacity 0.2s ease !important;
+  }
+  .chatbot-sidebar.closed {
+    width: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    border-left: none !important;
+  }
+  .chatbot-message-bubble {
+    max-width: 78%;
+  }
+}
+
+/* Essay sidebar drawer */
+.essay-sidebar {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s ease, opacity 0.2s ease;
+}
+@media (max-width: 1024px) {
+  .essay-sidebar {
+    position: fixed !important;
+    right: 0 !important;
+    top: 56px !important;
+    bottom: 0 !important;
+    height: calc(100vh - 56px) !important;
+    width: 260px !important;
+    transform: translateX(100%) !important;
+    z-index: 1000 !important;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.08) !important;
+    border-left: 1px solid var(--border) !important;
+  }
+  .essay-sidebar.open {
+    transform: translateX(0) !important;
+  }
+}
+@media (min-width: 1025px) {
+  .essay-sidebar {
+    display: flex !important;
+  }
+  .essay-sidebar.closed {
+    width: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    border-left: none !important;
+  }
+}
+
+/* ── Notes Layout ── */
+.notes-container {
+  height: 100vh;
+}
+
+/* ── Portfolio + Notes responsive overrides ── */
+@media (max-width: 1024px) {
+
+  /* — Portfolio — */
+  .portfolio-profile-card {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 16px !important;
+    padding: 20px !important;
+  }
+  .portfolio-stats-row {
+    flex-wrap: wrap !important;
+    gap: 16px !important;
+    width: 100% !important;
+    justify-content: flex-start !important;
+  }
+  .portfolio-stats-row > button {
+    margin-left: 0 !important;
+  }
+  .portfolio-cert-header {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  /* — Notes: toggle list/editor — */
+  .notes-container {
+    height: calc(100vh - 56px) !important;
+  }
+  .notes-sidebar {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    z-index: 10 !important;
+    display: none !important;
+  }
+  .notes-sidebar.active {
+    display: flex !important;
+  }
+  .notes-editor {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    z-index: 10 !important;
+    display: none !important;
+  }
+  .notes-editor.active {
+    display: flex !important;
+  }
+  .notes-back-btn {
+    display: flex !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .portfolio-stats-row {
+    gap: 12px !important;
+  }
+  .portfolio-stats-row > div {
+    min-width: 60px !important;
+  }
+}
+

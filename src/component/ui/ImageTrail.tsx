@@ -49,7 +49,6 @@ const ImageTrail: React.FC<ImageTrailProps> = ({
   const trailsRef = useRef<TrailImage[]>([]);
   const mousePosition = useRef({ x: 0, y: 0, moving: false });
   const lastPosition = useRef({ x: 0, y: 0, timestamp: 0 });
-  const loadedImagesRef = useRef<Set<string>>(new Set());
   const [allImagesLoaded, setAllImagesLoaded] = useState(false);
 
   // Load all images

@@ -293,7 +293,7 @@ export default function IELTSVideos() {
   const effectiveQuery = useCallback(() => {
     if (customQuery.trim()) return `IELTS ${customQuery.trim()}`;
     return activeSkillMeta.query;
-  }, [activeSkill, customQuery]);
+  }, [customQuery, activeSkillMeta.query]);
 
 const fetchVideos = useCallback(async (reset = true) => {
   if (noApiKey) return;

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Flame, TrendingUp, BookOpen, Headphones, Mic, PenLine, X, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Flame, BookOpen, Headphones, Mic, PenLine, X, ChevronRight, Volume2, VolumeX, Play, Pause } from 'lucide-react';
 import { api } from './api/client';
 import { UserProfile } from './api/auth';
+import WeaknessPanel from './component/WeaknessPanel';
 
 interface DashboardProps { onNav: (s: any) => void; }
 
@@ -148,6 +149,111 @@ function MiniBarChart({ values, color, todayIdx }: { values: number[]; color: st
   );
 }
 
+// ─── Mini Video Player ────────────────────────────────────────────────────────
+function MiniVideoPlayer() {
+  const [muted, setMuted] = useState(true);
+  const [playing, setPlaying] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (videoRef.current) {
+      videoRef.current.muted = !videoRef.current.muted;
+      setMuted(videoRef.current.muted);
+    }
+  };
+
+  const togglePlay = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (videoRef.current) {
+      if (playing) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play().catch(() => {});
+      }
+      setPlaying(!playing);
+    }
+  };
+
+  return (
+    <div style={{
+      background: 'var(--surface)',
+      border: '1px solid var(--border)',
+      borderRadius: 'var(--radius-lg)',
+      padding: '16px 18px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 10,
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-secondary)', letterSpacing: '0.6px' }}>INTRO VIDEO</span>
+        <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>Trailer</span>
+      </div>
+      <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', borderRadius: 'var(--radius-md)', overflow: 'hidden', background: '#000' }}>
+        <video
+          ref={videoRef}
+          src="/Video_trailer_IELTS.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+        {/* Controls Overlay */}
+        <div style={{
+          position: 'absolute',
+          bottom: 8,
+          right: 8,
+          display: 'flex',
+          gap: 6,
+          zIndex: 10,
+        }}>
+          <button
+            onClick={toggleMute}
+            style={{
+              background: 'rgba(0, 0, 0, 0.6)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '50%',
+              width: 28,
+              height: 28,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              backdropFilter: 'blur(4px)',
+              transition: 'background 0.2s',
+            }}
+            title={muted ? "Unmute" : "Mute"}
+          >
+            {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+          </button>
+          <button
+            onClick={togglePlay}
+            style={{
+              background: 'rgba(0, 0, 0, 0.6)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '50%',
+              width: 28,
+              height: 28,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              backdropFilter: 'blur(4px)',
+              transition: 'background 0.2s',
+            }}
+            title={playing ? "Pause" : "Play"}
+          >
+            {playing ? <Pause size={14} /> : <Play size={14} />}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 export default function Dashboard({ onNav }: DashboardProps) {
   const [user, setUser]           = useState<UserProfile | null>(null);
@@ -229,10 +335,10 @@ export default function Dashboard({ onNav }: DashboardProps) {
   };
 
   return (
-    <div style={{ padding: '32px 36px', maxWidth: 940 }} className="animate-fadeUp">
+    <div style={{ maxWidth: 940 }} className="animate-fadeUp responsive-padding">
 
       {/* ── Header ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28 }}>
+      <div className="responsive-flex-row" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28, gap: 12 }}>
         <div>
           <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginBottom: 4, letterSpacing: '0.3px' }}>
             {new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
@@ -266,7 +372,7 @@ export default function Dashboard({ onNav }: DashboardProps) {
       </div>
 
       {/* ── Stat cards ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 22 }}>
+      <div className="responsive-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 22 }}>
         {[
           { label: 'Total XP',       value: user.totalPoints?.toLocaleString() ?? '0',                    sub: 'Lifetime earned' },
           { label: 'Current level',  value: `Level ${topLevel}`,                                           sub: skills.find(s => s?.level === topLevel)?.levelName ?? '' },
@@ -286,15 +392,15 @@ export default function Dashboard({ onNav }: DashboardProps) {
       </div>
 
       {/* ── Main 2-col layout ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 14, marginBottom: 14 }}>
+      <div className="responsive-layout-main" style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 14, marginBottom: 14 }}>
 
         {/* Left column */}
         <div>
-          {/* Skills */}
+          {/* Skill progress title */}
           <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-secondary)', letterSpacing: '0.6px', marginBottom: 12 }}>
             SKILL PROGRESS
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+          <div className="responsive-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
             {skills.map((skill, i) => {
               if (!skill) return null;
               const meta = SKILL_META[skill.name] ?? SKILL_META.Writing;
@@ -344,6 +450,9 @@ export default function Dashboard({ onNav }: DashboardProps) {
               );
             })}
           </div>
+
+          {/* Weakness Detection Panel */}
+          <WeaknessPanel user={user} onNav={onNav} />
 
           {/* Daily tasks */}
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 20 }}>
@@ -398,6 +507,9 @@ export default function Dashboard({ onNav }: DashboardProps) {
 
         {/* Right sidebar */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+          {/* Intro Video */}
+          <MiniVideoPlayer />
 
           {/* Weekly XP chart */}
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 18 }}>
@@ -465,7 +577,7 @@ export default function Dashboard({ onNav }: DashboardProps) {
       </div>
 
       {/* ── Bottom row ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 12 }}>
+      <div className="responsive-layout-main" style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 12 }}>
 
         {/* Recent activity */}
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 20 }}>

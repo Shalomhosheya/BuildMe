@@ -20,7 +20,7 @@ export interface CriterionFeedback {
 export interface EssayEvaluationFull {
   evaluationId: string;
   overallBand: number;
-  taskType: 'Task 1' | 'Task 2';
+  taskType: string;
   wordCount: number;
   taskResponse: CriterionFeedback;
   coherenceCohesion: CriterionFeedback;

@@ -13,7 +13,7 @@
 //   )}
 
 import React, { useState } from 'react';
-import { PerformanceResult, SkillArea } from '../hooks/usePerformance';
+import { PerformanceResult } from '../hooks/usePerformance';
 
 interface Props {
   onTrigger: (result: PerformanceResult) => void;

@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Mic, MicOff, Play, Square, RotateCcw, ChevronRight, Loader } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Mic, Play, Square, RotateCcw, ChevronRight, Loader } from 'lucide-react';
 import { speakingApi, SpeakingResult, FALLBACK_QUESTIONS } from './api/speaking';
 
 type Stage = 'pick' | 'ready' | 'recording' | 'recorded' | 'evaluating' | 'result';

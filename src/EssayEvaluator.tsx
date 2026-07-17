@@ -1,19 +1,37 @@
       import React, { useState, useRef, useEffect } from 'react';
-      import { Send, Loader, RefreshCw, ChevronDown, ChevronUp, Sparkles, AlertCircle } from 'lucide-react';
+      import { Send, Loader, RefreshCw, ChevronDown, ChevronUp, Sparkles, AlertCircle, Award } from 'lucide-react';
       import { essayApi, BAND_DESCRIPTORS, ISSUE_COLORS, EssayEvaluationFull, InlineIssue } from './api/essayEvaluator';
 
       type Tab = 'write' | 'result' | 'rewrite';
 
       const TASK_QUESTIONS = {
-        'Task 1': [
+        'Academic Task 1': [
           'The chart below shows the percentage of households with internet access in five countries from 2000 to 2020. Summarise the information and make comparisons where relevant.',
           'The diagram below shows how solar panels work to produce electricity. Summarise the information by selecting and reporting the main features.',
           'The table shows the number of visitors to three museums in London between 2015 and 2019. Summarise the information and make comparisons where relevant.',
+          'The pie charts show the electricity generation sources in Germany and France in 2020. Summarise the information by selecting and reporting the main features.',
+          'The graph below shows the average monthly temperature and rainfall in two different cities. Summarise the information by selecting and reporting the main features.',
+          'The map below shows the changes in a small town called Westley between 2000 and 2020. Summarise the information and make comparisons where relevant.',
         ],
-        'Task 2': [
+        'Academic Task 2': [
           'Some people think children should be taught to be competitive. Others believe cooperation is more important. Discuss both views and give your own opinion.',
           'In many countries, the traditional family structure is changing. What are the causes of these changes? What are the effects on society?',
           'Governments should spend more money on public transport rather than building new roads. To what extent do you agree or disagree?',
+          'Some people think that university education should be free for everyone. Others think that students should pay for their education. Discuss both views and give your opinion.',
+          'Many people believe that printed books and newspapers will eventually be replaced by online media. Do you agree or disagree with this statement?',
+          'In recent years, the consumption of fast food has increased dramatically. What are the causes of this trend, and what are the consequences for public health?',
+        ],
+        'General Task 1': [
+          'You have recently moved to a new house. Write a letter to a friend. In your letter: explain why you moved, describe the new house, and invite them to visit.',
+          'You are unhappy with the service you received at a hotel during a recent business trip. Write a letter to the hotel manager. In your letter: describe the hotel stay, explain why you are unhappy, and suggest what action the hotel should take.',
+          'You recently rented a car but had some problems with it. Write a letter to the car rental company manager. In your letter: describe the rental details, explain the problems, and ask for a refund or apology.',
+          'You want to apply for a part-time job at a local community center. Write a letter to the center director. In your letter: explain why you want to work there, describe your relevant experience, and ask about working hours.',
+        ],
+        'General Task 2': [
+          'Many people believe that it is better for children to grow up in the countryside rather than in a big city. Do you agree or disagree?',
+          'In some countries, it is common for young people to take a gap year between finishing school and starting university. Discuss the advantages and disadvantages of this.',
+          'Some people believe that shopping online is more convenient and cheaper than shopping in traditional stores. To what extent do you agree or disagree?',
+          'Nowadays, more and more people choose to live alone rather than with family. What are the reasons for this, and is it a positive or negative development?',
         ],
       };
         
@@ -141,13 +159,233 @@
         );
       }
 
+
+      // ── Visual Prompt Mockup Generator ───────────────────────────────────────────
+      function VisualPrompt({ question }: { question: string }) {
+        if (!question) return null;
+
+        if (question.includes("households with internet access")) {
+          const data = [
+            { country: "USA", y2000: 45, y2020: 90 },
+            { country: "UK", y2000: 40, y2020: 88 },
+            { country: "Canada", y2000: 50, y2020: 92 },
+            { country: "Australia", y2000: 38, y2020: 85 },
+            { country: "Japan", y2000: 48, y2020: 91 },
+          ];
+          return (
+            <div style={{ margin: '12px 0 4px', padding: '12px 16px', background: 'var(--color-background-secondary)', borderRadius: 10, border: '1px solid var(--color-border-tertiary)' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 10, textAlign: 'center' }}>
+                Internet Access (% of Households) — 2000 vs 2020
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {data.map((item, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 10, width: 60, flexShrink: 0, fontWeight: 500 }}>{item.country}</span>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ width: `${item.y2000}%`, height: 6, background: '#888780', borderRadius: 3 }} />
+                        <span style={{ fontSize: 9, color: 'var(--color-text-tertiary)' }}>{item.y2000}% (2000)</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ width: `${item.y2020}%`, height: 6, background: '#534AB7', borderRadius: 3 }} />
+                        <span style={{ fontSize: 9, color: '#3C3489', fontWeight: 500 }}>{item.y2020}% (2020)</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        }
+
+        if (question.includes("solar panels work")) {
+          return (
+            <div style={{ margin: '12px 0 4px', padding: '12px 16px', background: 'var(--color-background-secondary)', borderRadius: 10, border: '1px solid var(--color-border-tertiary)' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 10, textAlign: 'center' }}>
+                How Solar Panels Produce Electricity (Process Diagram)
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between', overflowX: 'auto', paddingBottom: 4 }}>
+                <div style={{ padding: '6px 10px', background: '#FAEEDA', border: '1px solid #BA7517', borderRadius: 6, flex: 1, minWidth: 70, textAlign: 'center' }}>
+                  <div style={{ fontSize: 12 }}>☀️</div>
+                  <div style={{ fontSize: 9, fontWeight: 600, marginTop: 2 }}>1. Sunlight</div>
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--color-text-tertiary)' }}>➔</div>
+                <div style={{ padding: '6px 10px', background: '#E1F5EE', border: '1px solid #1D9E75', borderRadius: 6, flex: 1, minWidth: 70, textAlign: 'center' }}>
+                  <div style={{ fontSize: 12 }}>⚡</div>
+                  <div style={{ fontSize: 9, fontWeight: 600, marginTop: 2 }}>2. Panel</div>
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--color-text-tertiary)' }}>➔</div>
+                <div style={{ padding: '6px 10px', background: '#EEEDFE', border: '1px solid #534AB7', borderRadius: 6, flex: 1, minWidth: 70, textAlign: 'center' }}>
+                  <div style={{ fontSize: 12 }}>🎛️</div>
+                  <div style={{ fontSize: 9, fontWeight: 600, marginTop: 2 }}>3. Inverter</div>
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--color-text-tertiary)' }}>➔</div>
+                <div style={{ padding: '6px 10px', background: '#F1EFE8', border: '1px solid #888780', borderRadius: 6, flex: 1, minWidth: 70, textAlign: 'center' }}>
+                  <div style={{ fontSize: 12 }}>🏠</div>
+                  <div style={{ fontSize: 9, fontWeight: 600, marginTop: 2 }}>4. Grid</div>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        if (question.includes("visitors to three museums")) {
+          return (
+            <div style={{ margin: '12px 0 4px', padding: '12px 16px', background: 'var(--color-background-secondary)', borderRadius: 10, border: '1px solid var(--color-border-tertiary)' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 8, textAlign: 'center' }}>
+                Museum Visitors in London (Millions per Year)
+              </div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10, textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--color-border-tertiary)', color: 'var(--color-text-tertiary)' }}>
+                    <th style={{ padding: '4px', fontWeight: 600 }}>Museum</th>
+                    <th style={{ padding: '4px', fontWeight: 600 }}>2015</th>
+                    <th style={{ padding: '4px', fontWeight: 600 }}>2017</th>
+                    <th style={{ padding: '4px', fontWeight: 600 }}>2019</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid var(--color-border-tertiary)' }}>
+                    <td style={{ padding: '4px', fontWeight: 500 }}>British Museum</td>
+                    <td style={{ padding: '4px' }}>6.8M</td>
+                    <td style={{ padding: '4px' }}>6.2M</td>
+                    <td style={{ padding: '4px' }}>6.6M</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid var(--color-border-tertiary)' }}>
+                    <td style={{ padding: '4px', fontWeight: 500 }}>Science Museum</td>
+                    <td style={{ padding: '4px' }}>3.4M</td>
+                    <td style={{ padding: '4px' }}>3.8M</td>
+                    <td style={{ padding: '4px' }}>4.1M</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '4px', fontWeight: 500 }}>Natural History</td>
+                    <td style={{ padding: '4px' }}>5.3M</td>
+                    <td style={{ padding: '4px' }}>4.9M</td>
+                    <td style={{ padding: '4px' }}>5.4M</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          );
+        }
+
+        if (question.includes("electricity generation sources")) {
+          return (
+            <div style={{ margin: '12px 0 4px', padding: '12px 16px', background: 'var(--color-background-secondary)', borderRadius: 10, border: '1px solid var(--color-border-tertiary)' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 10, textAlign: 'center' }}>
+                Electricity Generation Breakdown (2020)
+              </div>
+              <div style={{ display: 'flex', gap: 20, justifyContent: 'space-around' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <span style={{ fontSize: 10, fontWeight: 600 }}>Germany</span>
+                  <div style={{ display: 'flex', gap: 6, fontSize: 9 }}>
+                    <span style={{ color: '#1D9E75' }}>♻️ Renewables (45%)</span>
+                    <span style={{ color: '#888780' }}>⚫ Coal (35%)</span>
+                    <span style={{ color: '#534AB7' }}>🔵 Other (20%)</span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <span style={{ fontSize: 10, fontWeight: 600 }}>France</span>
+                  <div style={{ display: 'flex', gap: 6, fontSize: 9 }}>
+                    <span style={{ color: '#534AB7' }}>⚛️ Nuclear (70%)</span>
+                    <span style={{ color: '#185FA5' }}>💧 Hydro (12%)</span>
+                    <span style={{ color: '#1D9E75' }}>♻️ Other (18%)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        if (question.includes("average monthly temperature and rainfall")) {
+          return (
+            <div style={{ margin: '12px 0 4px', padding: '12px 16px', background: 'var(--color-background-secondary)', borderRadius: 10, border: '1px solid var(--color-border-tertiary)' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 8, textAlign: 'center' }}>
+                Climate Profile: London vs Singapore (Selected Months)
+              </div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 9, textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--color-border-tertiary)', color: 'var(--color-text-tertiary)' }}>
+                    <th style={{ padding: '3px' }}>City & Metric</th>
+                    <th style={{ padding: '3px' }}>Jan</th>
+                    <th style={{ padding: '3px' }}>Apr</th>
+                    <th style={{ padding: '3px' }}>Jul</th>
+                    <th style={{ padding: '3px' }}>Oct</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid var(--color-border-tertiary)' }}>
+                    <td style={{ padding: '3px', fontWeight: 500 }}>London Temp (°C)</td>
+                    <td style={{ padding: '3px' }}>6°C</td>
+                    <td style={{ padding: '3px' }}>11°C</td>
+                    <td style={{ padding: '3px' }}>19°C</td>
+                    <td style={{ padding: '3px' }}>12°C</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid var(--color-border-tertiary)' }}>
+                    <td style={{ padding: '3px', fontWeight: 500 }}>London Rain (mm)</td>
+                    <td style={{ padding: '3px' }}>55mm</td>
+                    <td style={{ padding: '3px' }}>42mm</td>
+                    <td style={{ padding: '3px' }}>45mm</td>
+                    <td style={{ padding: '3px' }}>62mm</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid var(--color-border-tertiary)' }}>
+                    <td style={{ padding: '3px', fontWeight: 500 }}>Singapore Temp (°C)</td>
+                    <td style={{ padding: '3px' }}>27°C</td>
+                    <td style={{ padding: '3px' }}>28°C</td>
+                    <td style={{ padding: '3px' }}>27°C</td>
+                    <td style={{ padding: '3px' }}>27°C</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '3px', fontWeight: 500 }}>Singapore Rain (mm)</td>
+                    <td style={{ padding: '3px' }}>240mm</td>
+                    <td style={{ padding: '3px' }}>165mm</td>
+                    <td style={{ padding: '3px' }}>150mm</td>
+                    <td style={{ padding: '3px' }}>190mm</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          );
+        }
+
+        if (question.includes("changes in a small town called Westley")) {
+          return (
+            <div style={{ margin: '12px 0 4px', padding: '12px 16px', background: 'var(--color-background-secondary)', borderRadius: 10, border: '1px solid var(--color-border-tertiary)' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 10, textAlign: 'center' }}>
+                Westley Town Infrastructure comparison (2000 vs 2020)
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <div style={{ flex: 1, padding: 6, background: '#F1EFE8', border: '1px solid #888780', borderRadius: 6 }}>
+                  <div style={{ fontSize: 9, fontWeight: 600, marginBottom: 4, textAlign: 'center' }}>Westley in 2000</div>
+                  <div style={{ fontSize: 8, display: 'flex', flexDirection: 'column', gap: 2, color: 'var(--color-text-secondary)' }}>
+                    <span>🌲 North: Large forest area</span>
+                    <span>🏠 Center: 4 residential houses</span>
+                    <span>🚜 South: Farmland & dirt track</span>
+                  </div>
+                </div>
+                <div style={{ flex: 1, padding: 6, background: '#E1F5EE', border: '1px solid #1D9E75', borderRadius: 6 }}>
+                  <div style={{ fontSize: 9, fontWeight: 600, marginBottom: 4, textAlign: 'center' }}>Westley in 2020</div>
+                  <div style={{ fontSize: 8, display: 'flex', flexDirection: 'column', gap: 2, color: 'var(--color-text-secondary)' }}>
+                    <span>🏢 North: Block of flats & public park</span>
+                    <span>🏪 Center: Houses + Supermarket</span>
+                    <span>🛣️ South: Paved dual carriageway road</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        return null;
+      }
+
       // ════════════════════════════════════════════════════════════════════════════
       // MAIN COMPONENT
       // ════════════════════════════════════════════════════════════════════════════
       export default function EssayEvaluator() {
         const [tab, setTab]                 = useState<Tab>('write');
-        const [taskType, setTaskType]       = useState<'Task 1' | 'Task 2'>('Task 2');
-        const [question, setQuestion]       = useState(TASK_QUESTIONS['Task 2'][0]);
+        const [taskType, setTaskType]       = useState<keyof typeof TASK_QUESTIONS>('Academic Task 2');
+        const [question, setQuestion]       = useState(TASK_QUESTIONS['Academic Task 2'][0]);
         const [essay, setEssay]             = useState('');
         const [liveIssues, setLiveIssues]   = useState<InlineIssue[]>([]);
         const [selectedIssue, setSelectedIssue] = useState<InlineIssue | null>(null);
@@ -157,10 +395,11 @@
         const [rewriting, setRewriting]     = useState(false);
         const [error, setError]             = useState('');
         const [targetBand, setTargetBand]   = useState(8);
+        const [showScore, setShowScore]     = useState(window.innerWidth >= 1025);
         const debounce = useRef<NodeJS.Timeout | null>(null);
 
         const words = essay.trim() ? essay.trim().split(/\s+/).length : 0;
-        const minWords = taskType === 'Task 1' ? 150 : 250;
+        const minWords = taskType.includes('Task 1') ? 10 : 20;
         const wordOk   = words >= minWords;
 
         // Live issue detection while typing
@@ -181,7 +420,7 @@
         };
       }, [essay]);
 
-        function changeTaskType(t: 'Task 1' | 'Task 2') {
+        function changeTaskType(t: keyof typeof TASK_QUESTIONS) {
           setTaskType(t);
           setQuestion(TASK_QUESTIONS[t][0]);
           setEssay(''); setResult(null); setRewrite(null);
@@ -269,16 +508,16 @@
         const displayIssues = result?.inlineIssues?.length ? result.inlineIssues : liveIssues;
 
         return (
-          <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', fontFamily: 'var(--font-sans)' }}>
+          <div style={{ display: 'flex', flex: 1, height: 'auto', overflow: 'hidden', fontFamily: 'var(--font-sans)' }}>
 
             {/* ── Left panel ── */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid var(--color-border-tertiary)' }}>
 
               {/* Top bar */}
               <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--color-border-tertiary)', background: 'var(--color-background-primary)', flexShrink: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <div className="responsive-flex-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, gap: 10 }}>
                   <h1 style={{ fontSize: 20, fontWeight: 500, color: 'var(--color-text-primary)' }}>AI Writing Evaluator</h1>
-                  <div style={{ display: 'flex', gap: 6 }}>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {(['write', 'result', 'rewrite'] as Tab[]).map((t, i) => (
                       <button key={t} onClick={() => setTab(t)} disabled={t !== 'write' && !result}
                         style={{ padding: '5px 14px', fontSize: 12, borderRadius: 20, cursor: t === 'write' || result ? 'pointer' : 'not-allowed',
@@ -290,12 +529,30 @@
                         {['Write', 'Feedback', `Band ${targetBand} rewrite`][i]}
                       </button>
                     ))}
+                    <button onClick={() => setShowScore(prev => !prev)} title="Show score overview"
+                      style={{
+                        padding: '5px 14px',
+                        fontSize: 12,
+                        borderRadius: 20,
+                        cursor: 'pointer',
+                        border: `1px solid ${showScore ? '#534AB7' : 'var(--color-border-tertiary)'}`,
+                        background: showScore ? '#EEEDFE' : 'transparent',
+                        color: showScore ? '#3C3489' : 'var(--color-text-secondary)',
+                        fontWeight: showScore ? 500 : 400,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                      }}
+                    >
+                      <Award size={13} />
+                      <span style={{ fontSize: 12 }}>Overview</span>
+                    </button>
                   </div>
                 </div>
 
                 {/* Task type + question */}
-                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                  {(['Task 1', 'Task 2'] as const).map(t => (
+                <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                  {(['Academic Task 1', 'Academic Task 2', 'General Task 1', 'General Task 2'] as const).map(t => (
                     <button key={t} onClick={() => changeTaskType(t)} style={{
                       padding: '5px 14px', fontSize: 12, borderRadius: 20, cursor: 'pointer',
                       border: `1px solid ${taskType === t ? '#534AB7' : 'var(--color-border-tertiary)'}`,
@@ -312,6 +569,7 @@
                 <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', lineHeight: 1.6, background: 'var(--color-background-secondary)', padding: '8px 12px', borderRadius: 8 }}>
                   {question}
                 </div>
+                <VisualPrompt question={question} />
               </div>
 
               {/* ── WRITE TAB ── */}
@@ -415,7 +673,7 @@
             </div>
 
             {/* ── Right panel ── */}
-            <div style={{ width: 260, background: 'var(--color-background-primary)', display: 'flex', flexDirection: 'column', overflowY: 'auto', flexShrink: 0 }}>
+            <div className={`essay-sidebar ${showScore ? 'open' : 'closed'}`} style={{ width: 260, background: 'var(--color-background-primary)', display: 'flex', flexDirection: 'column', overflowY: 'auto', flexShrink: 0 }}>
               <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid var(--color-border-tertiary)' }}>
                 <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 12 }}>Score overview</div>
                 {result ? (

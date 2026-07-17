@@ -17,6 +17,7 @@ import MagicRings from './component/ui/MagicRings';
 import SuggestionPanel from './component/SuggestionPanel';
 import { usePerformance, PerformanceResult } from './hooks/usePerformance';
 import DevSuggestionTrigger from './component/DevSuggestionTrigger';
+import { Menu } from 'lucide-react';
 
 const FULL_HEIGHT: Screen[] = ['chatbot', 'notes', 'essay'];
 const HIDE_ANIMATION_SCREENS: Screen[] = ['notes', 'essay'];
@@ -24,6 +25,7 @@ const HIDE_ANIMATION_SCREENS: Screen[] = ['notes', 'essay'];
 export default function App() {
   const [authed, setAuthed] = useState<boolean>(isLoggedIn());
   const [screen, setScreen] = useState<Screen>('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const [pendingSuggestion, setPendingSuggestion] = useState<PerformanceResult | null>(null);
 
   const handleSuggestionNeeded = useCallback((result: PerformanceResult) => {
@@ -59,7 +61,7 @@ export default function App() {
     <div style={{
       display: 'flex',
       minHeight: '100vh',
-      background: 'white',
+      background: 'var(--bg)',
       position: 'relative',
       overflow: 'hidden',
     }}>
@@ -91,7 +93,9 @@ export default function App() {
         </div>
       )}
 
-      <Sidebar active={screen} onNav={setScreen} onLogout={handleLogout} />
+      {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
+
+      <Sidebar active={screen} onNav={setScreen} onLogout={handleLogout} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <main style={{
         flex: 1,
@@ -100,8 +104,30 @@ export default function App() {
         flexDirection: 'column',
         position: 'relative',
         zIndex: 1,
-        background: shouldShowAnimation ? 'transparent' : 'white',
+        background: shouldShowAnimation ? 'transparent' : 'var(--bg)',
       }}>
+        {/* Mobile Header Bar */}
+        <header className="mobile-header">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 4,
+              display: 'flex',
+              alignItems: 'center',
+              color: 'var(--text-primary)',
+              cursor: 'pointer',
+            }}
+          >
+            <Menu size={22} />
+          </button>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--purple)', fontWeight: 500 }}>
+            Build Me
+          </div>
+          <div style={{ width: 22 }} />
+        </header>
+
         {renderScreen()}
       </main>
 

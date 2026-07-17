@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Screen } from './types';
 import { 
-  LayoutDashboard, PenLine, BookOpen, Headphones, Mic, MessageCircle,
-  Timer, MessageSquare, FileText, Award, LogOut, Youtube
+  LayoutDashboard, PenLine, Headphones, Mic, MessageCircle,
+  Timer, FileText, Award, LogOut, Youtube, Sun, Moon
 } from 'lucide-react';
 import { authApi } from './api/auth';
 
@@ -10,6 +10,8 @@ interface SidebarProps {
   active: Screen;
   onNav: (s: Screen) => void;
   onLogout: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 const NAV = [
@@ -28,22 +30,23 @@ const NAV = [
   { screen: 'videos'    as Screen, label: 'IELTS Videos',      icon: Youtube,         section: null },
 ];
 
-function getActiveLabel(screen: Screen): string {
-  const map: Partial<Record<Screen, string>> = {
-    dashboard:  'Dashboard',
-    quiz:       'Quiz',
-    speaking:   'Speaking trainer',
-    notes:      'Notes',
-    portfolio:  'My portfolio',
-    videos:     'IELTS Videos',
-  };
-  return map[screen] ?? '';
-}
 
-export default function Sidebar({ active, onNav, onLogout }: SidebarProps) {
+export default function Sidebar({ active, onNav, onLogout, isOpen, onClose }: SidebarProps) {
   const [userName,  setUserName]  = useState('');
   const [userLevel, setUserLevel] = useState('');
   const [initials,  setInitials]  = useState('??');
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark' || saved === 'light') return saved;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(t => t === 'light' ? 'dark' : 'light');
 
   useEffect(() => {
     authApi.me()
@@ -65,12 +68,7 @@ export default function Sidebar({ active, onNav, onLogout }: SidebarProps) {
   }, []);
 
   return (
-    <aside style={{
-      width: 'var(--sidebar-width)', flexShrink: 0,
-      background: 'var(--surface)', borderRight: '1px solid var(--border)',
-      display: 'flex', flexDirection: 'column', height: '100vh',
-      position: 'sticky', top: 0, overflowY: 'auto',
-    }}>
+    <aside className={`app-sidebar ${isOpen ? 'open' : ''}`}>
       {/* Logo */}
       <div style={{ padding: '28px 20px 24px', borderBottom: '1px solid var(--border)' }}>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--purple)', letterSpacing: '-0.5px' }}>
@@ -97,7 +95,7 @@ export default function Sidebar({ active, onNav, onLogout }: SidebarProps) {
           const Icon = item.icon!;
           const isActive = item.screen === active;
           return (
-            <button key={i} onClick={() => item.screen && onNav(item.screen)}
+            <button key={i} onClick={() => { if (item.screen) { onNav(item.screen); onClose?.(); } }}
               style={{
                 display: 'flex', alignItems: 'center', gap: 10,
                 width: '100%', padding: '9px 20px', fontSize: 13,
@@ -137,6 +135,39 @@ export default function Sidebar({ active, onNav, onLogout }: SidebarProps) {
             </div>
           </div>
         </div>
+
+        <button
+          onClick={toggleTheme}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', gap: 7, padding: '8px',
+            fontSize: 12, fontWeight: 500, cursor: 'pointer',
+            border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+            background: 'transparent', color: 'var(--text-secondary)',
+            transition: 'all 0.15s',
+            marginBottom: 8,
+          }}
+          onMouseEnter={e => {
+            (e.currentTarget.style.background = 'var(--purple-light)');
+            (e.currentTarget.style.color = 'var(--purple-dark)');
+            (e.currentTarget.style.borderColor = 'var(--purple)');
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget.style.background = 'transparent');
+            (e.currentTarget.style.color = 'var(--text-secondary)');
+            (e.currentTarget.style.borderColor = 'var(--border)');
+          }}
+        >
+          {theme === 'light' ? (
+            <>
+              <Moon size={13} /> Dark Mode
+            </>
+          ) : (
+            <>
+              <Sun size={13} /> Light Mode
+            </>
+          )}
+        </button>
 
         <button
           onClick={onLogout}

@@ -306,3 +306,96 @@ export function predictListeningPerformance(
     confidence,
   };
 }
+
+// ── Weakness Detection for Dashboard ─────────────────────────────────────────
+
+export interface ActionStep {
+  icon: string;
+  title: string;
+  description: string;
+  screen?: 'quiz' | 'listening' | 'speaking' | 'essay' | 'chatbot' | 'videos';
+  url?: string;
+}
+
+export interface WeakSkill {
+  name: string;
+  level: number;
+  pct: number;                        // 0-100 progress toward next level
+  severity: 'critical' | 'needs_work';
+  steps: ActionStep[];
+  resources: Resource[];
+}
+
+export interface WeaknessReport {
+  weakSkills: WeakSkill[];
+  overallHealthy: boolean;
+}
+
+const SKILL_STEPS: Record<string, ActionStep[]> = {
+  Writing: [
+    { icon: '✏️', title: 'Submit an AI-graded essay', description: 'Get instant band scores across all four IELTS writing criteria.', screen: 'essay' },
+    { icon: '🎯', title: 'Study Task 2 structure', description: 'Learn the 4-paragraph framework that examiners reward.', url: 'https://www.youtube.com/results?search_query=IELTS+task+2+essay+structure+simon' },
+    { icon: '💬', title: 'Ask the IELTS chatbot', description: 'Get vocabulary and sentence-structure drills on your weak topics.', screen: 'chatbot' },
+    { icon: '📹', title: 'Watch writing video lessons', description: 'Browse curated IELTS writing tips in the video library.', screen: 'videos' },
+  ],
+  Reading: [
+    { icon: '📖', title: 'Complete a Reading quiz', description: 'Identify which question types (True/False/NG, matching) trip you up most.', screen: 'quiz' },
+    { icon: '⏱️', title: 'Practise skimming & scanning', description: 'Speed-reading is the single biggest score booster for Reading.', url: 'https://www.youtube.com/results?search_query=IELTS+reading+skimming+scanning+strategy' },
+    { icon: '💬', title: 'Discuss passages with chatbot', description: 'Ask the chatbot to quiz you on academic vocabulary and comprehension.', screen: 'chatbot' },
+  ],
+  Listening: [
+    { icon: '🎧', title: 'Daily Listening Trainer session', description: 'Practise all three accents — British, Australian, and American.', screen: 'listening' },
+    { icon: '📝', title: 'Review answer transcripts', description: 'After each session, read the transcript to catch words you missed.', screen: 'listening' },
+    { icon: '🎬', title: 'Watch accent training videos', description: 'Build ear-familiarity with diverse English accents used in IELTS.', url: 'https://www.youtube.com/results?search_query=IELTS+listening+british+australian+accent+practice' },
+  ],
+  Speaking: [
+    { icon: '🎤', title: 'Record a Speaking session', description: 'AI scores your fluency, pronunciation, vocabulary and grammar instantly.', screen: 'speaking' },
+    { icon: '🗣️', title: 'Practise Part 2 cue cards', description: 'Ask the chatbot to generate cue cards and speak for 2 minutes each.', screen: 'chatbot' },
+    { icon: '📹', title: 'Watch Band 7 interview models', description: 'Observe how examiners assess fluency and coherence in real recordings.', url: 'https://www.youtube.com/results?search_query=IELTS+speaking+band+7+full+interview' },
+  ],
+};
+
+export function detectWeaknesses(user: {
+  writing: { name: string; level: number; points: number; maxPoints: number };
+  reading: { name: string; level: number; points: number; maxPoints: number };
+  listening: { name: string; level: number; points: number; maxPoints: number };
+  speaking: { name: string; level: number; points: number; maxPoints: number };
+}): WeaknessReport {
+  const skills = [user.writing, user.reading, user.listening, user.speaking];
+  const weakSkills: WeakSkill[] = [];
+
+  for (const skill of skills) {
+    const pct = skill.maxPoints > 0 ? Math.round((skill.points / skill.maxPoints) * 100) : 0;
+    const isCritical  = skill.level === 1 && pct < 30;
+    const isNeedsWork = skill.level === 1 || pct < 40;
+
+    if (isCritical || isNeedsWork) {
+      const severity: WeakSkill['severity'] = isCritical ? 'critical' : 'needs_work';
+
+      // Pull 2-3 relevant curated resources
+      const resources = (RESOURCE_BANK[skill.name] ?? [])
+        .filter(r => r.soloLevel <= skill.level + 1)
+        .slice(0, 3);
+
+      weakSkills.push({
+        name:      skill.name,
+        level:     skill.level,
+        pct,
+        severity,
+        steps:     SKILL_STEPS[skill.name] ?? [],
+        resources,
+      });
+    }
+  }
+
+  // Sort: critical first, then by lowest pct
+  weakSkills.sort((a, b) => {
+    if (a.severity !== b.severity) return a.severity === 'critical' ? -1 : 1;
+    return a.pct - b.pct;
+  });
+
+  return {
+    weakSkills,
+    overallHealthy: weakSkills.length === 0,
+  };
+}

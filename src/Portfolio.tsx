@@ -166,10 +166,10 @@ export default function Portfolio({ onLogout }: { onLogout?: () => void }) {
   const certBtnLabel = issuing ? 'Issuing...' : cert?.issued ? (showCert ? 'Hide certificate' : 'View certificate') : cert?.eligible ? 'Issue certificate' : 'Not yet eligible';
 
   return (
-    <div style={{ padding: '32px 36px', maxWidth: 900, position: 'relative' }} className="animate-fadeUp">
+    <div style={{ padding: '32px 36px', maxWidth: 900, position: 'relative' }} className="animate-fadeUp responsive-padding portfolio-page">
 
       {/* ── Profile card ── */}
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)', padding: 28, display: 'flex', alignItems: 'center', gap: 24, marginBottom: 20 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)', padding: 28, display: 'flex', alignItems: 'center', gap: 24, marginBottom: 20 }} className="portfolio-profile-card">
 
         {/* Avatar with upload */}
         <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -211,7 +211,7 @@ export default function Portfolio({ onLogout }: { onLogout?: () => void }) {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 24, alignItems: 'center' }} className="portfolio-stats-row">
           {([
             [user.totalPoints?.toLocaleString(), 'Total pts'],
             [stats.quizzesCompleted, 'Quizzes'],
@@ -232,7 +232,7 @@ export default function Portfolio({ onLogout }: { onLogout?: () => void }) {
       </div>
 
       {/* ── Skills + Badges ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }} className="responsive-grid-2">
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 20 }}>
           <h2 style={{ fontSize: 13, fontWeight: 500, marginBottom: 16 }}>Skills overview</h2>
           {skillList.map((skill: any) => {
@@ -298,7 +298,7 @@ export default function Portfolio({ onLogout }: { onLogout?: () => void }) {
 
       {/* ── Certificate ── */}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }} className="portfolio-cert-header">
           <div>
             <h2 style={{ fontSize: 15, fontWeight: 500, marginBottom: 4 }}>IELTS readiness certificate</h2>
             <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Complete all 4 skills at Level 3 to unlock your verifiable certificate</p>
@@ -321,7 +321,7 @@ export default function Portfolio({ onLogout }: { onLogout?: () => void }) {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10, marginBottom: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10, marginBottom: 16 }} className="responsive-grid-4">
           {skillList.map((skill: any) => (
             <div key={skill.name} style={{ background: 'var(--gray-100)', borderRadius: 'var(--radius-md)', padding: 12, textAlign: 'center' }}>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>{skill.name}</div>

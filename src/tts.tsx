@@ -15,16 +15,16 @@ export type Accent = 'british' | 'australian' | 'american' | 'african' | 'indian
 
 // ── ElevenLabs voice IDs ──────────────────────────────────────────────────────
 const ELEVENLABS_VOICES: Record<Accent, { id: string; name: string }> = {
-  british:    { id: 'N2lVS1w4EtoT3dr4eOWO', name: 'Callum'   },
-  australian: { id: 'gAMZphRyrWJnLMDnom6H', name: 'Charlotte' },
-  american:   { id: 'pNInz6obpgDQGcFmaJgB', name: 'Adam'     },
+  british:    { id: 'Xb7hH8MSUJpSbSDYk0k2', name: 'Alice'   },   // ✅ genuine British RP female
+  australian: { id: 'IKne3meq5aSn9XLyUdCD', name: 'Charlie' },   // ✅ verified Australian male
+  american:   { id: 'pNInz6obpgDQGcFmaJgB', name: 'Adam'     },   // ✅ American male
   african:    { id: 'eRcsJdPMOM0mtGC03ul7', name: 'kevin'     },
   indian:     { id: 'SXuKWBhKoIoAHKlf6Gt3', name: 'Gaurav'   }, 
   russian:    { id: 'XaEUesE01wKIKaa0xI0h', name: 'Nino'   }, 
   chinese:    { id: 'NIkIuJZ8oQMuKZqwKtnm', name: 'Deep Bass'     }, 
 };
 
-const ELEVENLABS_MODEL = 'eleven_turbo_v2';
+const ELEVENLABS_MODEL = 'eleven_multilingual_v2';  // ✅ better accent fidelity than turbo
 
 // ── ElevenLabs TTS ────────────────────────────────────────────────────────────
 async function elevenLabsSpeak(
@@ -48,17 +48,20 @@ async function elevenLabsSpeak(
         text,
         model_id: ELEVENLABS_MODEL,
         voice_settings: {
-          stability:         0.45,
-          similarity_boost:  0.80,
-          style:             0.30,
+          stability:         0.55,
+          similarity_boost:  0.85,
+          style:             0.25,
           use_speaker_boost: true,
         },
       }),
     },
   );
 
-  if (!res.ok) throw new Error(`ElevenLabs ${res.status}: ${await res.text()}`);
-
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error(`[TTS] ElevenLabs error ${res.status} for voice "${voice.name}" (${voice.id}):`, errText);
+    throw new Error(`ElevenLabs ${res.status}: ${errText}`);
+  }
   const blob  = await res.blob();
   const url   = URL.createObjectURL(blob);
   const audio = new Audio(url);

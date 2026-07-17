@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader, RotateCcw, Lightbulb, Wrench, MessageCircle, BookOpen } from 'lucide-react';
+import { Send, Loader, RotateCcw, Lightbulb, Wrench, MessageCircle, BookOpen, HelpCircle, Plus, Trash2 } from 'lucide-react';
 import { chatbotApi, QUICK_PROMPTS, ChatMessage } from './api/chatbot';
+import { api, getToken } from './api/client';
 
 const TYPE_META = {
   correction: { color: '#085041', bg: '#E1F5EE', icon: '✓', label: 'Correction' },
@@ -65,8 +66,60 @@ export default function IELTSChatbot() {
   const [input, setInput]         = useState('');
   const [loading, setLoading]     = useState(false);
   const [activeType, setActiveType] = useState<string | null>(null);
+  const [showInfo, setShowInfo]   = useState(window.innerWidth >= 1025);
   const endRef                    = useRef<HTMLDivElement>(null);
   const inputRef                  = useRef<HTMLTextAreaElement>(null);
+
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadSessions();
+  }, []);
+
+  async function loadSessions() {
+    try {
+      const data = await api.get<any[]>('/api/chatbot/history');
+      setSessions(data || []);
+    } catch (err) {
+      console.error('Failed to load chat history:', err);
+    }
+  }
+
+  async function loadSession(sessionId: string) {
+    setLoading(true);
+    try {
+      const data = await api.get<any>(`/api/chatbot/history/${sessionId}`);
+      if (data && data.messages) {
+        setMessages(data.messages);
+        setActiveSessionId(sessionId);
+      }
+    } catch (err) {
+      console.error('Failed to load session details:', err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function deleteSession(e: React.MouseEvent, sessionId: string) {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this chat session?")) return;
+    try {
+      await api.delete(`/api/chatbot/history/${sessionId}`);
+      if (activeSessionId === sessionId) {
+        setMessages([WELCOME]);
+        setActiveSessionId(null);
+      }
+      loadSessions();
+    } catch (err) {
+      console.error('Failed to delete session:', err);
+    }
+  }
+
+  function startNewChat() {
+    setMessages([WELCOME]);
+    setActiveSessionId(null);
+  }
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -75,22 +128,152 @@ export default function IELTSChatbot() {
   async function send(text?: string) {
     const msg = (text || input).trim();
     if (!msg || loading) return;
+
     setInput('');
 
-    const userMsg: ChatMessage = { role: 'user', type: 'general', text: msg, timestamp: new Date().toISOString() };
+    const userMsg: ChatMessage = {
+      role: 'user',
+      type: 'general',
+      text: msg,
+      timestamp: new Date().toISOString()
+    };
+
     setMessages(prev => [...prev, userMsg]);
     setLoading(true);
 
+    let addedAssistantPlaceholder = false;
+
     try {
-      const res = await chatbotApi.send(msg, messages.filter(m => m.role !== 'assistant' || m !== WELCOME));
-      const botMsg: ChatMessage = { role: 'assistant', type: res.type, text: res.reply, timestamp: new Date().toISOString() };
-      setMessages(prev => [...prev, botMsg]);
-      setActiveType(res.type);
-    } catch {
-      const fallback = buildFallback(msg);
-      setMessages(prev => [...prev, { role: 'assistant', type: fallback.type, text: fallback.reply, timestamp: new Date().toISOString() }]);
-    } finally {
+      // Determine intent to attach appropriate system prompt
+      const lower = msg.toLowerCase();
+      const isCorrection = lower.match(/\b(fix|correct|wrong|grammar|mistake|error)\b/)
+        || lower.match(/\b(he|she|they|i|we)\s+(go|is|are|was|have|don't|doesn't|didn't)\b/);
+      const isIdeas = lower.match(/\b(idea|topic|argument|vocabulary|vocab|word|theme)\b/);
+
+
+
+      const type = isCorrection ? "correction" : isIdeas ? "ideas" : "answer";
+
+      // Add empty assistant response block to messages first so we can update it in real time
+      const assistantMsg: ChatMessage = {
+        role: 'assistant',
+        type: type as any,
+        text: '',
+        timestamp: new Date().toISOString()
+      };
+
+      setMessages(prev => [...prev, assistantMsg]);
+      addedAssistantPlaceholder = true;
       setLoading(false);
+
+      const token = getToken();
+      const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+
+      const response = await fetch(`${BASE_URL}/api/chatbot/message/stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          message: msg,
+          history: messages
+            .filter(m => m.text && m.text.trim() !== '')
+            .slice(-6)
+            .map(m => ({
+              role: m.role,
+              text: m.text
+            }))
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Streaming request failed: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("Response body has no reader");
+      }
+
+      const decoder = new TextDecoder("utf-8");
+      let done = false;
+      let accumulatedText = "";
+
+      const updateLastMessageText = (text: string) => {
+        setMessages(prev => {
+          const copy = [...prev];
+          if (copy.length > 0) {
+            copy[copy.length - 1] = {
+              ...copy[copy.length - 1],
+              text
+            };
+          }
+          return copy;
+        });
+      };
+
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          const chunk = decoder.decode(value, { stream: !done });
+          accumulatedText += chunk;
+
+          // Update the last message text in state
+          updateLastMessageText(accumulatedText);
+        }
+      }
+
+      // Save/update session in database with the fully accumulated assistant message
+      const finalAssistantMsg = { ...assistantMsg, text: accumulatedText || "[No response from model]" };
+      const finalMessages = [...messages, userMsg, finalAssistantMsg];
+      
+      try {
+        if (activeSessionId) {
+          await api.put(`/api/chatbot/history/${activeSessionId}`, {
+            messages: finalMessages
+          });
+        } else {
+          const title = msg.length > 30 ? msg.substring(0, 27) + '...' : msg;
+          const session = await api.post<any>('/api/chatbot/history', {
+            title,
+            messages: finalMessages
+          });
+          if (session && session.id) {
+            setActiveSessionId(session.id);
+          }
+        }
+        loadSessions();
+      } catch (dbErr) {
+        console.error('Failed to save chat session:', dbErr);
+      }
+
+    } catch (err) {
+      console.error(err);
+      setLoading(false);
+      if (addedAssistantPlaceholder) {
+        setMessages(prev => {
+          const copy = [...prev];
+          if (copy.length > 0) {
+            copy[copy.length - 1] = {
+              ...copy[copy.length - 1],
+              text: copy[copy.length - 1].text + "\n\n[Connection lost. Partial response shown.]"
+            };
+          }
+          return copy;
+        });
+      } else {
+        setMessages(prev => [
+          ...prev,
+          {
+            role: "assistant",
+            type: "general",
+            text: "Server error. Try again.",
+            timestamp: new Date().toISOString()
+          }
+        ]);
+      }
     }
   }
 
@@ -102,13 +285,13 @@ export default function IELTSChatbot() {
         type: 'correction',
         reply: `Let me analyse that sentence for you.
 
-**Possible issues detected:**
-• Check subject-verb agreement (e.g. "he goes" not "he go")
-• Check tense consistency throughout
-• Check article use (a/an/the)
+          **Possible issues detected:**
+          • Check subject-verb agreement (e.g. "he goes" not "he go")
+          • Check tense consistency throughout
+          • Check article use (a/an/the)
 
-**General rule:**
-Third person singular present tense needs -s: "She **goes**, He **knows**, It **works**"
+          **General rule:**
+          Third person singular present tense needs -s: "She **goes**, He **knows**, It **works**"
 
 **Tip:** In IELTS Writing, grammatical errors affect your Grammatical Range & Accuracy score. Aim for a mix of simple and complex structures with minimal errors.`
       };
@@ -187,6 +370,7 @@ I'm here to help with grammar corrections, topic ideas, vocabulary, band score t
     setMessages([WELCOME]);
     setActiveType(null);
     setInput('');
+    setActiveSessionId(null);
   }
 
   const typeFilter = [
@@ -201,18 +385,124 @@ I'm here to help with grammar corrections, topic ideas, vocabulary, band score t
     : messages;
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flex: 1, height: 'auto', overflow: 'hidden' }}>
+
+      {/* ── Left Sidebar (History) ── */}
+      <div style={{
+        width: 240,
+        borderRight: '1px solid var(--color-border-tertiary)',
+        background: 'var(--color-background-primary)',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        flexShrink: 0
+      }}>
+        {/* New Chat Button */}
+        <div style={{ padding: '16px 14px', borderBottom: '1px solid var(--color-border-tertiary)' }}>
+          <button onClick={startNewChat}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              padding: '10px',
+              background: '#534AB7',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: 'pointer',
+              transition: 'background 0.2s'
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = '#4338ca'}
+            onMouseLeave={e => e.currentTarget.style.background = '#534AB7'}
+          >
+            <Plus size={16} /> New Chat
+          </button>
+        </div>
+
+        {/* Chat List */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '10px 8px' }}>
+          <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: 'var(--color-text-tertiary)', padding: '0 8px 8px' }}>
+            Recent Conversations
+          </div>
+          {sessions.length === 0 ? (
+            <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', textAlign: 'center', padding: '20px 10px', fontStyle: 'italic' }}>
+              No past conversations
+            </div>
+          ) : (
+            sessions.map(s => {
+              const isActive = activeSessionId === s.id;
+              return (
+                <div key={s.id} onClick={() => loadSession(s.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 10px',
+                    marginBottom: 4,
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    background: isActive ? '#EEEDFE' : 'transparent',
+                    borderLeft: isActive ? '3px solid #534AB7' : '3px solid transparent',
+                    color: isActive ? '#3C3489' : 'var(--color-text-primary)',
+                    fontWeight: isActive ? 500 : 400,
+                    transition: 'all 0.15s'
+                  }}
+                  className="chat-history-item"
+                  onMouseEnter={e => {
+                    if (!isActive) e.currentTarget.style.background = 'var(--color-background-secondary)';
+                  }}
+                  onMouseLeave={e => {
+                    if (!isActive) e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  <span style={{
+                    fontSize: 12,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    flex: 1,
+                    paddingRight: 8
+                  }}>
+                    {s.title}
+                  </span>
+                  <button onClick={(e) => deleteSession(e, s.id)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      padding: 2,
+                      cursor: 'pointer',
+                      color: 'var(--color-text-tertiary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: 4
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-tertiary)'}
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
 
       {/* ── Main chat ── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
         {/* Header */}
-        <div style={{ padding: '14px 24px', borderBottom: '1px solid var(--color-border-tertiary)', background: 'var(--color-background-primary)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="responsive-flex-row" style={{ padding: '14px 24px', borderBottom: '1px solid var(--color-border-tertiary)', background: 'var(--color-background-primary)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
           <div>
             <h1 style={{ fontSize: 20, fontWeight: 500, color: 'var(--color-text-primary)', marginBottom: 2 }}>IELTS Assistant</h1>
             <p style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>Ask questions · Fix sentences · Get topic ideas</p>
           </div>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <div className="chatbot-filters" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             {typeFilter.map(f => (
               <button key={String(f.key)} onClick={() => setActiveType(f.key)}
                 style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px', fontSize: 11, borderRadius: 20, cursor: 'pointer',
@@ -227,6 +517,20 @@ I'm here to help with grammar corrections, topic ideas, vocabulary, band score t
             <button onClick={clear} title="Clear chat"
               style={{ padding: '6px', border: '1px solid var(--color-border-tertiary)', borderRadius: 8, background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
               <RotateCcw size={14} style={{ color: 'var(--color-text-secondary)' }} />
+            </button>
+            <button onClick={() => setShowInfo(prev => !prev)} title="Show help"
+              style={{
+                padding: '6px',
+                border: '1px solid var(--color-border-tertiary)',
+                borderRadius: 8,
+                background: showInfo ? '#EEEDFE' : 'transparent',
+                color: showInfo ? '#3C3489' : 'var(--color-text-secondary)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <HelpCircle size={14} />
             </button>
           </div>
         </div>
@@ -246,7 +550,7 @@ I'm here to help with grammar corrections, topic ideas, vocabulary, band score t
                   {isUser ? 'Me' : meta.icon}
                 </div>
 
-                <div style={{ maxWidth: '78%' }}>
+                <div className="chatbot-message-bubble" style={{ maxWidth: '78%' }}>
                   {/* Type badge for bot */}
                   {!isUser && m.type && m.type !== 'general' && (
                     <div style={{ fontSize: 10, fontWeight: 600, color: meta.color, marginBottom: 4, letterSpacing: '0.05em' }}>
@@ -321,7 +625,7 @@ I'm here to help with grammar corrections, topic ideas, vocabulary, band score t
       </div>
 
       {/* ── Right sidebar ── */}
-      <div style={{ width: 220, borderLeft: '1px solid var(--color-border-tertiary)', background: 'var(--color-background-primary)', overflowY: 'auto', flexShrink: 0 }}>
+      <div className={`chatbot-sidebar ${showInfo ? 'open' : 'closed'}`} style={{ width: 220, borderLeft: '1px solid var(--color-border-tertiary)', background: 'var(--color-background-primary)', overflowY: 'auto', flexShrink: 0 }}>
         <div style={{ padding: '16px 14px' }}>
           <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 12, color: 'var(--color-text-primary)' }}>What I can do</div>
 
