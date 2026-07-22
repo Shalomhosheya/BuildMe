@@ -258,7 +258,7 @@ export default function IELTSChatbot() {
           if (copy.length > 0) {
             copy[copy.length - 1] = {
               ...copy[copy.length - 1],
-              text: copy[copy.length - 1].text + "\n\n[Connection lost. Partial response shown.]"
+              text: copy[copy.length - 1].text
             };
           }
           return copy;

@@ -60,7 +60,7 @@ export default function App() {
   return (
     <div style={{
       display: 'flex',
-      minHeight: '100vh',
+      height: '100vh',
       background: 'var(--bg)',
       position: 'relative',
       overflow: 'hidden',
@@ -99,6 +99,7 @@ export default function App() {
 
       <main style={{
         flex: 1,
+        height: '100vh',
         overflowY: isFullHeight ? 'hidden' : 'auto',
         display: 'flex',
         flexDirection: 'column',

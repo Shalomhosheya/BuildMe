@@ -70,7 +70,7 @@ export default function Sidebar({ active, onNav, onLogout, isOpen, onClose }: Si
   return (
     <aside className={`app-sidebar ${isOpen ? 'open' : ''}`}>
       {/* Logo */}
-      <div style={{ padding: '28px 20px 24px', borderBottom: '1px solid var(--border)' }}>
+      <div style={{ padding: '28px 20px 24px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--purple)', letterSpacing: '-0.5px' }}>
           Build Me
         </div>
@@ -80,7 +80,7 @@ export default function Sidebar({ active, onNav, onLogout, isOpen, onClose }: Si
       </div>
 
       {/* Navigation */}
-      <nav style={{ flex: 1, padding: '8px 0' }}>
+      <nav style={{ flex: 1, padding: '8px 0', overflowY: 'auto' }}>
         {NAV.map((item, i) => {
           if (item.section) {
             return (
@@ -117,7 +117,7 @@ export default function Sidebar({ active, onNav, onLogout, isOpen, onClose }: Si
       </nav>
 
       {/* User info + logout */}
-      <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)' }}>
+      <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
           <div style={{
             width: 34, height: 34, borderRadius: '50%', flexShrink: 0,

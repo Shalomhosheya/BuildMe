@@ -33,7 +33,7 @@ export default function Speaking() {
   const [audioBlob, setAudioBlob]   = useState<Blob | null>(null);
   const [result, setResult]         = useState<SpeakingResult | null>(null);
   const [error, setError]           = useState('');
-  const [micAllowed, setMicAllowed] = useState<boolean | null>(null);
+
   const [history, setHistory]       = useState<any[]>([]);
 
   const mediaRef    = useRef<MediaRecorder | null>(null);
@@ -59,10 +59,8 @@ export default function Speaking() {
   async function requestMic(): Promise<MediaStream | null> {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      setMicAllowed(true);
       return stream;
     } catch {
-      setMicAllowed(false);
       setError('Microphone access denied. Please allow mic access in your browser settings.');
       return null;
     }
@@ -189,7 +187,7 @@ export default function Speaking() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 400 }}>Speaking evaluation</h1>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={reset} style={{ padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'transparent', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button onClick={reset} style={{ padding: '8px 16px', border: '1px solid var(--border-md)', borderRadius: 'var(--radius-md)', background: 'transparent', color: 'var(--text-primary)', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
               <RotateCcw size={13} /> Try again
             </button>
             <button onClick={nextQuestion} style={{ padding: '8px 16px', background: 'var(--purple)', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', fontSize: 13, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -363,7 +361,7 @@ export default function Speaking() {
             <audio src={audioUrl} controls style={{ width: '100%', marginBottom: 20, height: 36 }} />
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
               <button onClick={reset}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 20px', border: '1px solid var(--border-md)', borderRadius: 'var(--radius-md)', background: 'transparent', fontSize: 13, cursor: 'pointer' }}>
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 20px', border: '1px solid var(--border-md)', borderRadius: 'var(--radius-md)', background: 'transparent', color: 'var(--text-primary)', fontSize: 13, cursor: 'pointer' }}>
                 <RotateCcw size={13} /> Re-record
               </button>
               <button onClick={evaluate}

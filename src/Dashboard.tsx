@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { Flame, BookOpen, Headphones, Mic, PenLine, X, ChevronRight, Volume2, VolumeX, Play, Pause } from 'lucide-react';
 import { api } from './api/client';
 import { UserProfile } from './api/auth';
@@ -46,7 +47,6 @@ function timeAgo(dateStr: string) {
   if (h < 24)  return `${h}h ago`;
   return `${Math.floor(h / 24)}d ago`;
 }
-
 // ─── Skill Detail Modal ───────────────────────────────────────────────────────
 interface SkillModalProps {
   skill: any;
@@ -58,12 +58,13 @@ function SkillModal({ skill, onClose, onNav }: SkillModalProps) {
   const meta = SKILL_META[skill.name] ?? SKILL_META.Writing;
   const pct  = Math.round((skill.points / skill.maxPoints) * 100);
 
-  return (
+  return ReactDOM.createPortal(
     <div
       onClick={onClose}
       style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
-        zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+        backdropFilter: 'blur(3px)',
+        zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}
     >
       <div
@@ -72,6 +73,7 @@ function SkillModal({ skill, onClose, onNav }: SkillModalProps) {
           background: 'var(--surface)', borderRadius: 'var(--radius-lg)',
           border: '1px solid var(--border)', padding: 24, width: 340,
           animation: 'fadeUp 0.2s ease both',
+          boxShadow: 'var(--shadow-md)',
         }}
       >
         {/* Header */}
@@ -125,7 +127,8 @@ function SkillModal({ skill, onClose, onNav }: SkillModalProps) {
           Practice {skill.name} →
         </button>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
