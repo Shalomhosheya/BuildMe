@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Screen } from './types';
 import { 
   LayoutDashboard, PenLine, Headphones, Mic, MessageCircle,
-  Timer, FileText, Award, LogOut, Youtube, Sun, Moon
+  Timer, FileText, Award, LogOut, Youtube, Sun, Moon, HelpCircle
 } from 'lucide-react';
 import { authApi } from './api/auth';
 
@@ -28,6 +28,7 @@ const NAV = [
   { screen: 'essay'     as Screen, label: 'Writing evaluator', icon: PenLine,         section: null },
   { screen: null,                   label: 'Resources',         icon: null,            section: true },
   { screen: 'videos'    as Screen, label: 'IELTS Videos',      icon: Youtube,         section: null },
+  { screen: 'faq'       as Screen, label: 'FAQ',               icon: HelpCircle,      section: null },
 ];
 
 
