@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Screen } from './types';
 import { 
   LayoutDashboard, PenLine, Headphones, Mic, MessageCircle,
-  Timer, FileText, Award, LogOut, Youtube, Sun, Moon, HelpCircle
+  Timer, FileText, Award, LogOut, Youtube, Sun, Moon, HelpCircle, Gamepad2
 } from 'lucide-react';
 import { authApi } from './api/auth';
 
@@ -22,6 +22,7 @@ const NAV = [
   { screen: 'speaking'  as Screen, label: 'Speaking trainer',   icon: Mic,             section: null },
   { screen: null,                   label: 'Practice',          icon: null,            section: true },
   { screen: 'quiz'      as Screen, label: 'Quiz',              icon: Timer,           section: null },
+  { screen: 'games'     as Screen, label: 'Games',             icon: Gamepad2,        section: null },
   { screen: 'notes'     as Screen, label: 'Notes',             icon: FileText,        section: null },
   { screen: null,                   label: 'Portfolio',         icon: null,            section: true },
   { screen: 'portfolio' as Screen, label: 'My portfolio',      icon: Award,           section: null },

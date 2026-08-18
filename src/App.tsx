@@ -14,6 +14,7 @@ import ListeningTrainer from './ListeningTrainer';
 import EssayEvaluator from './EssayEvaluator';
 import IELTSVideos from './IELTSVideos';
 import FAQ from './FAQ';
+import Games from './Games';
 import MagicRings from './component/ui/MagicRings';
 import SuggestionPanel from './component/SuggestionPanel';
 import { usePerformance, PerformanceResult } from './hooks/usePerformance';
@@ -55,6 +56,7 @@ export default function App() {
       case 'portfolio': return <Portfolio onLogout={handleLogout} />;
       case 'videos':    return <IELTSVideos />;
       case 'faq':       return <FAQ onNav={setScreen} />;
+      case 'games':     return <Games />;
       default:          return <Dashboard onNav={setScreen} />;
     }
   };
